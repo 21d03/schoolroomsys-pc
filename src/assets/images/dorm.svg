@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800px" height="600px" viewBox="0 0 800 600" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <rect fill="#FFFFFF" opacity="0.2" x="100" y="100" width="600" height="400" rx="8"></rect>
+        <g transform="translate(150.000000, 150.000000)">
+            <!-- 建筑物主体 -->
+            <rect fill="#FFFFFF" opacity="0.3" x="50" y="100" width="400" height="250" rx="4"></rect>
+            <rect fill="#FFFFFF" opacity="0.4" x="100" y="50" width="300" height="300" rx="4"></rect>
+            
+            <!-- 窗户 -->
+            <g transform="translate(150, 100)" fill="#FFFFFF" opacity="0.6">
+                <rect x="0" y="0" width="40" height="40" rx="2"></rect>
+                <rect x="60" y="0" width="40" height="40" rx="2"></rect>
+                <rect x="120" y="0" width="40" height="40" rx="2"></rect>
+                
+                <rect x="0" y="60" width="40" height="40" rx="2"></rect>
+                <rect x="60" y="60" width="40" height="40" rx="2"></rect>
+                <rect x="120" y="60" width="40" height="40" rx="2"></rect>
+                
+                <rect x="0" y="120" width="40" height="40" rx="2"></rect>
+                <rect x="60" y="120" width="40" height="40" rx="2"></rect>
+                <rect x="120" y="120" width="40" height="40" rx="2"></rect>
+            </g>
+            
+            <!-- 门 -->
+            <rect fill="#FFFFFF" opacity="0.5" x="220" y="250" width="60" height="100" rx="2"></rect>
+        </g>
+    </g>
+</svg> 
