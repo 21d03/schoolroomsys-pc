@@ -41,9 +41,9 @@
           </div>
 
           <!-- 用户名 -->
-          <el-form-item prop="username">
+          <el-form-item prop="userId">
             <el-input
-              v-model="loginForm.username"
+              v-model="loginForm.userId"
               :placeholder="getPlaceholder"
               :prefix-icon="User"
             />
@@ -94,15 +94,15 @@ const loginFormRef = ref()
 
 // 用户类型
 const userTypes = [
-  { label: '学校管理员', value: 'admin', icon: 'School' },
-  { label: '学院教师', value: 'teacher', icon: 'Notebook' },
-  { label: '学生', value: 'student', icon: 'Avatar' }
+  { label: '学校管理员', value: '1', icon: 'School' },
+  { label: '学院老师', value: '2', icon: 'Notebook' },
+  { label: '学生', value: '3', icon: 'Avatar' }
 ]
 
 // 表单数据
 const loginForm = reactive({
-  userType: 'admin',
-  username: '',
+  userType: '1',
+  userId: '',
   password: '',
   remember: false
 })
@@ -110,23 +110,23 @@ const loginForm = reactive({
 // 根据用户类型显示不同的placeholder
 const getPlaceholder = computed(() => {
   const typeMap = {
-    admin: '请输入管理员账号',
-    teacher: '请输入教师工号',
-    student: '请输入学号'
+    '1': '请输入管理员工号',
+    '2': '请输入教师工号',
+    '3': '请输入学号'
   }
   return typeMap[loginForm.userType]
 })
 
 // 表单验证规则
 const loginRules = {
-  username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+  userId: [{ required: true, message: '请输入账号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
 // 选择用户类型
 const handleTypeSelect = (type) => {
   loginForm.userType = type
-  loginForm.username = ''
+  loginForm.userId = ''
   loginForm.password = ''
 }
 
@@ -141,16 +141,27 @@ const handleLogin = async () => {
         const res = await request({
           url: '/api/login',
           method: 'post',
-          data: loginForm
+          data: {
+            userId: loginForm.userId,
+            password: loginForm.password,
+            userType: loginForm.userType
+          }
         })
         
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('userInfo', JSON.stringify(res.data.userInfo))
-        
-        ElMessage.success('登录成功')
-        router.push('/')
+        if (res.code === 0) {
+          // 存储用户信息和token
+          localStorage.setItem('token', res.data.token)
+          localStorage.setItem('userInfo', JSON.stringify(res.data))
+          
+          ElMessage.success('登录成功')
+          // 跳转到数据展示页面
+          router.push('/dashboard')
+        } else {
+          ElMessage.error(res.msg || '登录失败')
+        }
       } catch (error) {
         console.error('登录失败:', error)
+        ElMessage.error(error.response?.data?.msg || '登录失败，请稍后重试')
       } finally {
         loading.value = false
       }

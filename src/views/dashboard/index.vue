@@ -1,222 +1,95 @@
 <template>
   <div class="dashboard-container">
-    <!-- 统计卡片 -->
-    <el-row :gutter="20">
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>宿舍楼总数</span>
-              <el-icon><House /></el-icon>
-            </div>
-          </template>
-          <div class="card-body">
-            <span class="number">{{ stats.buildingCount || 0 }}</span>
-            <span class="unit">栋</span>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>房间使用率</span>
-              <el-icon><DataLine /></el-icon>
-            </div>
-          </template>
-          <div class="card-body">
-            <span class="number">{{ stats.roomUsageRate || 0 }}</span>
-            <span class="unit">%</span>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>待处理报修</span>
-              <el-icon><Tools /></el-icon>
-            </div>
-          </template>
-          <div class="card-body">
-            <span class="number">{{ stats.pendingRepairs || 0 }}</span>
-            <span class="unit">件</span>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="6">
-        <el-card shadow="hover" class="stat-card">
-          <template #header>
-            <div class="card-header">
-              <span>待审批请假</span>
-              <el-icon><Document /></el-icon>
-            </div>
-          </template>
-          <div class="card-body">
-            <span class="number">{{ stats.pendingLeaves || 0 }}</span>
-            <span class="unit">条</span>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+    <div class="user-info-card">
+      <h2>用户信息</h2>
+      <el-descriptions :column="1" border>
+        <!-- 通用信息 -->
+        <el-descriptions-item label="用户ID">{{ userInfo.userId }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{ userInfo.userName }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{ userInfo.name }}</el-descriptions-item>
+        <el-descriptions-item label="联系方式">{{ userInfo.phone }}</el-descriptions-item>
+        <el-descriptions-item label="性别">{{ userInfo.sex }}</el-descriptions-item>
+        <el-descriptions-item label="所属学院">{{ userInfo.collegeName }}</el-descriptions-item>
 
-    <!-- 图表区域 -->
-    <el-row :gutter="20" class="chart-row">
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>宿舍楼入住情况</span>
-            </div>
-          </template>
-          <div class="chart-container">
-            <!-- 这里将来放图表组件 -->
-            <div class="placeholder">宿舍楼入住率统计图表</div>
-          </div>
-        </el-card>
-      </el-col>
-      
-      <el-col :span="12">
-        <el-card shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <span>报修类型分布</span>
-            </div>
-          </template>
-          <div class="chart-container">
-            <!-- 这里将来放图表组件 -->
-            <div class="placeholder">报修类型饼图</div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
+        <!-- 学生特有信息 -->
+        <template v-if="userInfo.userType === '3'">
+          <el-descriptions-item label="专业">{{ userInfo.profession }}</el-descriptions-item>
+          <el-descriptions-item label="班级">{{ userInfo.classRoom }}</el-descriptions-item>
+          <el-descriptions-item label="辅导员">{{ userInfo.teacherName }}</el-descriptions-item>
+          <el-descriptions-item label="辅导员联系方式">{{ userInfo.teacherPhone }}</el-descriptions-item>
+          <el-descriptions-item label="宿舍信息">{{ userInfo.buildId }}号楼 {{ userInfo.roomId }}房间</el-descriptions-item>
+        </template>
 
-    <!-- 最近动态 -->
-    <el-card shadow="hover" class="activity-card">
-      <template #header>
-        <div class="card-header">
-          <span>最近动态</span>
-        </div>
-      </template>
-      <el-timeline>
-        <el-timeline-item
-          v-for="(activity, index) in recentActivities"
-          :key="index"
-          :timestamp="activity.time"
-          :type="activity.type"
-        >
-          {{ activity.content }}
-        </el-timeline-item>
-      </el-timeline>
-    </el-card>
+        <!-- 教师特有信息 -->
+        <template v-if="['1', '2'].includes(userInfo.userType)">
+          <el-descriptions-item label="用户类型">
+            {{ userInfo.userType === '1' ? '学校管理员' : '学院老师' }}
+          </el-descriptions-item>
+        </template>
+      </el-descriptions>
+
+      <div class="actions">
+        <el-button type="primary" @click="handleLogout">退出登录</el-button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { House, DataLine, Tools, Document } from '@element-plus/icons-vue'
-import request from '@/utils/request'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
-// 统计数据
-const stats = ref({
-  buildingCount: 0,
-  roomUsageRate: 0,
-  pendingRepairs: 0,
-  pendingLeaves: 0
-})
-
-// 最近动态数据
-const recentActivities = ref([
-  {
-    content: '张三提交了请假申请',
-    time: '2024-03-18 10:00',
-    type: 'primary'
-  },
-  {
-    content: '1号楼102房间报修已处理完成',
-    time: '2024-03-18 09:30',
-    type: 'success'
-  },
-  {
-    content: '新增学生宿舍分配：李四 - 2号楼304室',
-    time: '2024-03-18 09:00',
-    type: 'info'
-  }
-])
-
-// 获取统计数据
-const fetchStats = async () => {
-  try {
-    const res = await request({
-      url: '/api/dashboard/stats',
-      method: 'get'
-    })
-    stats.value = res.data
-  } catch (error) {
-    console.error('获取统计数据失败:', error)
-  }
-}
+const router = useRouter()
+const userInfo = ref({})
 
 onMounted(() => {
-  fetchStats()
+  const storedUserInfo = localStorage.getItem('userInfo')
+  if (storedUserInfo) {
+    userInfo.value = JSON.parse(storedUserInfo)
+  } else {
+    ElMessage.error('用户信息不存在')
+    router.push('/login')
+  }
 })
+
+const handleLogout = () => {
+  localStorage.removeItem('token')
+  localStorage.removeItem('userInfo')
+  router.push('/login')
+  ElMessage.success('已退出登录')
+}
 </script>
 
 <style lang="scss" scoped>
 .dashboard-container {
-  .stat-card {
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      
-      .el-icon {
-        font-size: 20px;
-        color: #409EFF;
-      }
-    }
-    
-    .card-body {
+  padding: 20px;
+  height: 100vh;
+  background: #f5f7fa;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  .user-info-card {
+    margin-top: 40px;
+    background: #fff;
+    border-radius: 8px;
+    padding: 24px;
+    width: 100%;
+    max-width: 800px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+
+    h2 {
+      margin-bottom: 24px;
+      color: #1890ff;
+      font-size: 24px;
       text-align: center;
-      padding: 10px 0;
-      
-      .number {
-        font-size: 24px;
-        font-weight: bold;
-        color: #303133;
-      }
-      
-      .unit {
-        font-size: 14px;
-        color: #909399;
-        margin-left: 5px;
-      }
     }
-  }
-  
-  .chart-row {
-    margin-top: 20px;
-    
-    .chart-container {
-      height: 300px;
-      
-      .placeholder {
-        height: 100%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        color: #909399;
-        background: #f5f7fa;
-        border-radius: 4px;
-      }
+
+    .actions {
+      margin-top: 24px;
+      text-align: center;
     }
-  }
-  
-  .activity-card {
-    margin-top: 20px;
   }
 }
 </style> 

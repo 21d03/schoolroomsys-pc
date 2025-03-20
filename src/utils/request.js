@@ -1,14 +1,19 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 
+// 创建 axios 实例
 const service = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
-  timeout: 15000
+  baseURL: '/SchoolRoomSys',  // 添加基础路径
+  timeout: 5000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
 service.interceptors.request.use(
   config => {
+    // 从 localStorage 获取 token
     const token = localStorage.getItem('token')
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`
@@ -16,6 +21,7 @@ service.interceptors.request.use(
     return config
   },
   error => {
+    console.error('请求错误:', error)
     return Promise.reject(error)
   }
 )
@@ -24,19 +30,19 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   response => {
     const res = response.data
-    if (res.code !== 200) {
-      ElMessage.error(res.message || '请求失败')
-      if (res.code === 401) {
-        // token过期，重新登录
-        localStorage.removeItem('token')
-        window.location.href = '/login'
-      }
-      return Promise.reject(res)
+    
+    // 后端返回的成功状态码是0
+    if (res.code === 0) {
+      return res
     }
-    return res
+    
+    // 处理错误情况
+    ElMessage.error(res.msg || '系统错误')
+    return Promise.reject(new Error(res.msg || '系统错误'))
   },
   error => {
-    ElMessage.error(error.message || '请求失败')
+    console.error('响应错误:', error)
+    ElMessage.error(error.response?.data?.msg || '请求失败，请稍后重试')
     return Promise.reject(error)
   }
 )
