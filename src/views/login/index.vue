@@ -82,11 +82,14 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { User, Lock, School, Notebook, Avatar } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import request from '@/utils/request'
+
+// 设置页面标题
+document.title = '宿舍管理系统'
 
 const router = useRouter()
 const loading = ref(false)
@@ -138,6 +141,12 @@ const handleLogin = async () => {
     if (valid) {
       try {
         loading.value = true
+        console.log('开始登录请求，参数：', {
+          userId: loginForm.userId,
+          password: loginForm.password,
+          userType: loginForm.userType
+        })
+
         const res = await request({
           url: '/api/login',
           method: 'post',
@@ -148,14 +157,37 @@ const handleLogin = async () => {
           }
         })
         
+        console.log('登录响应：', res)
+        
         if (res.code === 0) {
           // 存储用户信息和token
           localStorage.setItem('token', res.data.token)
           localStorage.setItem('userInfo', JSON.stringify(res.data))
           
+          console.log('用户信息已存储，准备跳转')
           ElMessage.success('登录成功')
-          // 跳转到数据展示页面
-          router.push('/dashboard')
+          
+          // 根据用户类型跳转到不同页面
+          const userType = res.data.userType
+          console.log('用户类型：', userType)
+          
+          switch (userType) {
+            case '1':
+              console.log('跳转到管理员页面')
+              router.push('/admin')
+              break
+            case '2':
+              console.log('跳转到教师页面')
+              router.push('/teacher')
+              break
+            case '3':
+              console.log('跳转到学生页面')
+              router.push('/student')
+              break
+            default:
+              console.log('未知用户类型，返回登录页')
+              router.push('/login')
+          }
         } else {
           ElMessage.error(res.msg || '登录失败')
         }

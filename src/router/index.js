@@ -1,27 +1,20 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { adminRoutes } from './admin'
+import Login from '@/views/login/index.vue'
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
-      path: '/login',
-      name: 'Login',
-      component: () => import('@/views/login/index.vue'),
-      meta: { title: '登录' }
+      path: '/',
+      redirect: '/login'
     },
     {
-      path: '/',
-      component: () => import('@/layout/index.vue'),
-      redirect: '/dashboard',
-      children: [
-        {
-          path: 'dashboard',
-          name: 'Dashboard',
-          component: () => import('@/views/dashboard/index.vue'),
-          meta: { title: '首页', requiresAuth: true }
-        }
-      ]
-    }
+      path: '/login',
+      name: 'Login',
+      component: Login
+    },
+    adminRoutes
   ]
 })
 
@@ -29,14 +22,37 @@ const router = createRouter({
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
-  
-  if (to.meta.requiresAuth && !token) {
-    next('/login')
-  } else if (to.path === '/login' && token) {
-    next('/')
-  } else {
+
+  if (to.path === '/login') {
     next()
+    return
   }
+
+  if (!token) {
+    next('/login')
+    return
+  }
+
+  // 检查用户类型和路由权限
+  const userType = userInfo.userType
+  const path = to.path
+
+  if (path.startsWith('/admin') && userType !== '1') {
+    next('/login')
+    return
+  }
+
+  if (path.startsWith('/teacher') && userType !== '2') {
+    next('/login')
+    return
+  }
+
+  if (path.startsWith('/student') && userType !== '3') {
+    next('/login')
+    return
+  }
+
+  next()
 })
 
 export default router

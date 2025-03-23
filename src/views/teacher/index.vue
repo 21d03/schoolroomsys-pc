@@ -1,31 +1,15 @@
 <template>
-  <div class="dashboard-container">
+  <div class="teacher-container">
     <div class="user-info-card">
-      <h2>用户信息</h2>
+      <h2>学院老师信息</h2>
       <el-descriptions :column="1" border>
-        <!-- 通用信息 -->
         <el-descriptions-item label="用户ID">{{ userInfo.userId }}</el-descriptions-item>
         <el-descriptions-item label="用户名">{{ userInfo.userName }}</el-descriptions-item>
         <el-descriptions-item label="姓名">{{ userInfo.name }}</el-descriptions-item>
         <el-descriptions-item label="联系方式">{{ userInfo.phone }}</el-descriptions-item>
         <el-descriptions-item label="性别">{{ userInfo.sex }}</el-descriptions-item>
         <el-descriptions-item label="所属学院">{{ userInfo.collegeName }}</el-descriptions-item>
-
-        <!-- 学生特有信息 -->
-        <template v-if="userInfo.userType === '3'">
-          <el-descriptions-item label="专业">{{ userInfo.profession }}</el-descriptions-item>
-          <el-descriptions-item label="班级">{{ userInfo.classRoom }}</el-descriptions-item>
-          <el-descriptions-item label="辅导员">{{ userInfo.teacherName }}</el-descriptions-item>
-          <el-descriptions-item label="辅导员联系方式">{{ userInfo.teacherPhone }}</el-descriptions-item>
-          <el-descriptions-item label="宿舍信息">{{ userInfo.buildId }}号楼 {{ userInfo.roomId }}房间</el-descriptions-item>
-        </template>
-
-        <!-- 教师特有信息 -->
-        <template v-if="['1', '2'].includes(userInfo.userType)">
-          <el-descriptions-item label="用户类型">
-            {{ userInfo.userType === '1' ? '学校管理员' : '学院老师' }}
-          </el-descriptions-item>
-        </template>
+        <el-descriptions-item label="用户级别">学院老师</el-descriptions-item>
       </el-descriptions>
 
       <div class="actions">
@@ -40,8 +24,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
-// 设置页面标题
-document.title = '宿舍管理系统'
+document.title = '宿舍管理系统 - 教师'
 
 const router = useRouter()
 const userInfo = ref({})
@@ -50,6 +33,11 @@ onMounted(() => {
   const storedUserInfo = localStorage.getItem('userInfo')
   if (storedUserInfo) {
     userInfo.value = JSON.parse(storedUserInfo)
+    // 验证用户类型
+    if (userInfo.value.userType !== '2') {
+      ElMessage.error('无权访问该页面')
+      router.push('/login')
+    }
   } else {
     ElMessage.error('用户信息不存在')
     router.push('/login')
@@ -65,7 +53,7 @@ const handleLogout = () => {
 </script>
 
 <style lang="scss" scoped>
-.dashboard-container {
+.teacher-container {
   padding: 20px;
   height: 100vh;
   background: #f5f7fa;
