@@ -21,12 +21,21 @@
             <template #header>
               <div class="card-header">
                 <span>宿舍楼总数</span>
-                <el-tag size="small" type="success">正常运行</el-tag>
+                <el-tag size="small" type="success">运行中</el-tag>
               </div>
             </template>
-            <div class="card-content">
-              <div class="number">12</div>
-              <div class="desc">栋宿舍楼</div>
+            <div class="card-content split">
+              <div class="split-item">
+                <div class="title">正常使用</div>
+                <div class="number">{{ statsData.buildingNormal }}</div>
+                <div class="desc">栋</div>
+              </div>
+              <div class="divider"></div>
+              <div class="split-item">
+                <div class="title">暂停使用</div>
+                <div class="number">{{ statsData.buildingStopped }}</div>
+                <div class="desc">栋</div>
+              </div>
             </div>
           </el-card>
         </el-col>
@@ -39,9 +48,18 @@
                 <el-tag size="small" type="primary">共计</el-tag>
               </div>
             </template>
-            <div class="card-content">
-              <div class="number">486</div>
-              <div class="desc">间宿舍</div>
+            <div class="card-content split">
+              <div class="split-item">
+                <div class="title">正常使用</div>
+                <div class="number">{{ statsData.roomNormal }}</div>
+                <div class="desc">间</div>
+              </div>
+              <div class="divider"></div>
+              <div class="split-item">
+                <div class="title">暂停使用</div>
+                <div class="number">{{ statsData.roomStopped }}</div>
+                <div class="desc">间</div>
+              </div>
             </div>
           </el-card>
         </el-col>
@@ -50,13 +68,22 @@
           <el-card shadow="hover" class="stat-card">
             <template #header>
               <div class="card-header">
-                <span>待处理审批</span>
-                <el-tag size="small" type="danger">待处理</el-tag>
+                <span>审批请求</span>
+                <el-tag size="small" type="warning">总数</el-tag>
               </div>
             </template>
-            <div class="card-content">
-              <div class="number">24</div>
-              <div class="desc">条待处理</div>
+            <div class="card-content split">
+              <div class="split-item">
+                <div class="title">待处理</div>
+                <div class="number">{{ statsData.approvalPending }}</div>
+                <div class="desc">条</div>
+              </div>
+              <div class="divider"></div>
+              <div class="split-item">
+                <div class="title">已处理</div>
+                <div class="number">{{ statsData.approvalProcessed }}</div>
+                <div class="desc">条</div>
+              </div>
             </div>
           </el-card>
         </el-col>
@@ -90,10 +117,41 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import request from '@/utils/request'
+import { ElMessage } from 'element-plus'
 
 // 获取用户信息
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
+
+// 统计数据
+const statsData = ref({
+  buildingTotal: 0,
+  buildingNormal: 0,
+  buildingStopped: 0,
+  roomTotal: 0,
+  roomNormal: 0,
+  roomStopped: 0,
+  approvalTotal: 0,
+  approvalProcessed: 0,
+  approvalPending: 0
+})
+
+// 获取统计数据
+const fetchStatsData = async () => {
+  try {
+    const response = await request.get('/school/index')
+    statsData.value = response.data
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+    ElMessage.error('获取统计数据失败，请稍后重试')
+  }
+}
+
+// 页面加载时获取数据
+onMounted(() => {
+  fetchStatsData()
+})
 
 // 获取问候语
 const getGreeting = () => {
@@ -192,8 +250,46 @@ const recentApprovals = ref([
       }
 
       .card-content {
-        text-align: center;
         padding: 10px 0;
+        text-align: center;
+
+        &.split {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 10px 20px;
+
+          .split-item {
+            flex: 1;
+            text-align: center;
+
+            .title {
+              font-size: 14px;
+              color: #909399;
+              margin-bottom: 8px;
+            }
+
+            .number {
+              font-size: 28px;
+              font-weight: bold;
+              color: #303133;
+              line-height: 1.2;
+              margin-bottom: 4px;
+            }
+
+            .desc {
+              font-size: 12px;
+              color: #909399;
+            }
+          }
+
+          .divider {
+            width: 1px;
+            height: 40px;
+            background-color: #EBEEF5;
+            margin: 0 20px;
+          }
+        }
 
         .number {
           font-size: 36px;

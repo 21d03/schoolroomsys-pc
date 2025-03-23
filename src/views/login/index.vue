@@ -148,7 +148,7 @@ const handleLogin = async () => {
         })
 
         const res = await request({
-          url: '/api/login',
+          url: '/login',
           method: 'post',
           data: {
             userId: loginForm.userId,
@@ -159,37 +159,33 @@ const handleLogin = async () => {
         
         console.log('登录响应：', res)
         
-        if (res.code === 0) {
-          // 存储用户信息和token
-          localStorage.setItem('token', res.data.token)
-          localStorage.setItem('userInfo', JSON.stringify(res.data))
-          
-          console.log('用户信息已存储，准备跳转')
-          ElMessage.success('登录成功')
-          
-          // 根据用户类型跳转到不同页面
-          const userType = res.data.userType
-          console.log('用户类型：', userType)
-          
-          switch (userType) {
-            case '1':
-              console.log('跳转到管理员页面')
-              router.push('/admin')
-              break
-            case '2':
-              console.log('跳转到教师页面')
-              router.push('/teacher')
-              break
-            case '3':
-              console.log('跳转到学生页面')
-              router.push('/student')
-              break
-            default:
-              console.log('未知用户类型，返回登录页')
-              router.push('/login')
-          }
-        } else {
-          ElMessage.error(res.msg || '登录失败')
+        // 存储用户信息和token
+        localStorage.setItem('token', res.data.token)
+        localStorage.setItem('userInfo', JSON.stringify(res.data))
+        
+        console.log('用户信息已存储，准备跳转')
+        ElMessage.success('登录成功')
+        
+        // 根据用户类型跳转到不同页面
+        const userType = res.data.userType
+        console.log('用户类型：', userType)
+        
+        switch (userType) {
+          case '1':
+            console.log('跳转到管理员页面')
+            router.push('/admin')
+            break
+          case '2':
+            console.log('跳转到教师页面')
+            router.push('/teacher')
+            break
+          case '3':
+            console.log('跳转到学生页面')
+            router.push('/student')
+            break
+          default:
+            console.log('未知用户类型，返回登录页')
+            router.push('/login')
         }
       } catch (error) {
         console.error('登录失败:', error)
