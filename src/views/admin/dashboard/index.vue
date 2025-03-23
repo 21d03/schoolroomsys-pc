@@ -3,6 +3,9 @@
     <!-- 欢迎语 -->
     <el-card class="welcome-card" shadow="hover">
       <div class="welcome-content">
+        <div class="avatar-circle">
+          {{ userInfo.name ? userInfo.name.charAt(0) : 'U' }}
+        </div>
         <div class="welcome-text">
           <h2>欢迎回来，{{ userInfo.name }}</h2>
           <p>{{ getGreeting() }}</p>
@@ -141,8 +144,27 @@ const recentApprovals = ref([
 
     .welcome-content {
       padding: 10px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+
+      .avatar-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        background-color: var(--el-color-primary);
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 28px;
+        font-weight: bold;
+        flex-shrink: 0;
+      }
 
       .welcome-text {
+        flex: 1;
+
         h2 {
           margin: 0;
           font-size: 24px;
