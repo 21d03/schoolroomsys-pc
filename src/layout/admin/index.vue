@@ -1,16 +1,17 @@
 <template>
   <div class="admin-layout">
     <!-- 侧边栏 -->
-    <el-aside width="220px" class="aside">
+    <el-aside :width="isCollapse ? '64px' : '220px'" class="aside">
       <div class="logo">
-        <h1>宿舍管理系统</h1>
+        <h1>{{ isCollapse ? '宿' : '宿舍管理系统' }}</h1>
       </div>
       <el-menu
         :default-active="activeMenu"
         class="el-menu-vertical"
+        :collapse="isCollapse"
         background-color="#001529"
         text-color="#fff"
-        active-text-color="#1890ff"
+        active-text-color="#409EFF"
         :router="true"
       >
         <el-menu-item index="/admin/dashboard">
@@ -68,7 +69,12 @@
       <!-- 顶部导航 -->
       <el-header class="header">
         <div class="header-left">
-          <el-icon class="fold-icon" @click="toggleSidebar"><Expand /></el-icon>
+          <el-icon 
+            class="fold-icon" 
+            @click="toggleSidebar"
+          >
+            <component :is="isCollapse ? 'Expand' : 'Fold'" />
+          </el-icon>
         </div>
         <div class="header-right">
           <el-dropdown trigger="click" @command="handleCommand">
@@ -135,6 +141,7 @@ import {
   PieChart,
   Setting,
   Expand,
+  Fold,
   CaretBottom
 } from '@element-plus/icons-vue'
 
@@ -162,6 +169,14 @@ const showProfileDialog = ref(false)
 // 当前激活的菜单
 const activeMenu = computed(() => route.path)
 
+// 菜单折叠状态
+const isCollapse = ref(false)
+
+// 切换侧边栏
+const toggleSidebar = () => {
+  isCollapse.value = !isCollapse.value
+}
+
 // 处理下拉菜单命令
 const handleCommand = (command) => {
   if (command === 'logout') {
@@ -183,11 +198,6 @@ const handleCommand = (command) => {
     showProfileDialog.value = true
   }
 }
-
-// 切换侧边栏
-const toggleSidebar = () => {
-  // TODO: 实现侧边栏折叠功能
-}
 </script>
 
 <style lang="scss" scoped>
@@ -207,6 +217,7 @@ const toggleSidebar = () => {
     overflow-x: hidden;
     overflow-y: auto;
     flex-shrink: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     
     .logo {
       height: 60px;
@@ -215,17 +226,59 @@ const toggleSidebar = () => {
       color: #fff;
       font-size: 16px;
       border-bottom: 1px solid #002140;
+      overflow: hidden;
+      white-space: nowrap;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       
       h1 {
         color: #fff;
         font-size: 18px;
         margin: 0;
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       }
     }
 
     .el-menu {
       border-right: none;
       height: calc(100% - 60px);
+      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    :deep(.el-menu--collapse) {
+      width: 64px;
+    }
+
+    :deep(.el-menu-item),
+    :deep(.el-sub-menu__title) {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+      .el-icon {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      span {
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+    }
+
+    :deep(.el-sub-menu) {
+      .el-menu-item {
+        min-width: 200px;
+      }
+    }
+
+    &::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
     }
   }
 
@@ -235,6 +288,7 @@ const toggleSidebar = () => {
     flex-direction: column;
     height: 100%;
     overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
     .header {
       height: 60px;
@@ -245,12 +299,19 @@ const toggleSidebar = () => {
       justify-content: space-between;
       padding: 0 20px;
       flex-shrink: 0;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
       .header-left {
         .fold-icon {
           font-size: 20px;
           cursor: pointer;
           color: #333;
+          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+          &:hover {
+            color: var(--el-color-primary);
+            transform: scale(1.1);
+          }
         }
       }
 
@@ -260,6 +321,11 @@ const toggleSidebar = () => {
           display: flex;
           align-items: center;
           gap: 4px;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+          &:hover {
+            color: var(--el-color-primary);
+          }
         }
       }
     }
@@ -270,6 +336,7 @@ const toggleSidebar = () => {
       padding: 20px;
       overflow-y: auto;
       height: calc(100% - 60px);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
   }
 }

@@ -55,4 +55,9 @@ router.beforeEach((to, from, next) => {
   next()
 })
 
+// 设置页面标题
+router.afterEach((to) => {
+  document.title = '宿舍管理系统'
+})
+
 export default router
