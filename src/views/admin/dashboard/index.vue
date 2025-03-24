@@ -95,17 +95,22 @@
       <template #header>
         <div class="card-header">
           <span>最近审批</span>
-          <el-button type="primary" link>查看全部</el-button>
         </div>
       </template>
       <el-table :data="recentApprovals" style="width: 100%">
-        <el-table-column prop="id" label="申请编号" width="120" />
-        <el-table-column prop="type" label="申请类型" width="120" />
-        <el-table-column prop="applicant" label="申请人" width="120" />
-        <el-table-column prop="content" label="申请内容" />
+        <el-table-column prop="id" label="申请编号" width="160" />
+        <el-table-column prop="type" label="申请类型" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.type === '请假申请' ? 'primary' : 'success'" size="small">
+              {{ row.type }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="applicant" label="申请人" width="180" />
+        <el-table-column prop="content" label="申请内容" show-overflow-tooltip />
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.status === '待审批' ? 'warning' : 'success'">
+            <el-tag :type="row.statusType" size="small">
               {{ row.status }}
             </el-tag>
           </template>
@@ -120,6 +125,7 @@
 import { ref, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
+import axios from 'axios'  // 导入axios
 
 // 获取用户信息
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
@@ -140,17 +146,85 @@ const statsData = ref({
 // 获取统计数据
 const fetchStatsData = async () => {
   try {
-    const response = await request.get('/school/index')
-    statsData.value = response.data
+    const res = await request({
+      url: '/api/school/index',
+      method: 'get'
+    })
+    console.log('统计数据响应：', res)
+    
+    if (res.data) {
+      statsData.value = res.data
+    }
   } catch (error) {
-    console.error('获取统计数据失败:', error)
-    ElMessage.error('获取统计数据失败，请稍后重试')
+    console.error('获取统计数据失败：', error)
   }
+}
+
+// 最近审批数据
+const recentApprovals = ref([])
+
+// 获取最近审批数据
+const fetchRecentApprovals = async () => {
+  try {
+    // 直接使用axios发请求
+    const res = await axios.get('http://localhost:8080/SchoolRoomSys/school/approval/recent', {
+      headers: {
+        'token': localStorage.getItem('token')
+      }
+    })
+    
+    console.log('最近审批响应：', res.data)
+    
+    if (res.data.code === 1 && Array.isArray(res.data.data)) {
+      // 处理审批数据
+      recentApprovals.value = res.data.data.map(item => ({
+        id: item.approvalId,
+        type: item.approvalType === '1' ? '请假申请' : '维修申请',
+        applicant: `${item.studentName}(${item.studentId})`,
+        content: item.content,
+        status: getStatusText(item.status),
+        statusType: getStatusType(item.status),
+        createTime: formatDateTime(item.createTime)
+      }))
+    }
+  } catch (error) {
+    console.error('获取最近审批数据失败：', error)
+  }
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  const statusMap = {
+    '0': '待审批',
+    '1': '已通过',
+    '2': '已拒绝'
+  }
+  return statusMap[status] || '未知'
+}
+
+// 获取状态类型（用于标签颜色）
+const getStatusType = (status) => {
+  const typeMap = {
+    '0': 'warning',
+    '1': 'success',
+    '2': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 格式化日期时间
+const formatDateTime = (timeArray) => {
+  if (!Array.isArray(timeArray) || timeArray.length < 5) {
+    return '时间未知'
+  }
+  const [year, month, day, hour, minute] = timeArray
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')} ${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`
 }
 
 // 页面加载时获取数据
 onMounted(() => {
   fetchStatsData()
+  fetchRecentApprovals()
 })
 
 // 获取问候语
@@ -165,34 +239,6 @@ const getGreeting = () => {
   if (hour < 22) return '晚上好，请放松心情'
   return '夜深了，请注意休息'
 }
-
-// 模拟最近审批数据
-const recentApprovals = ref([
-  {
-    id: 'AP202401001',
-    type: '维修申请',
-    applicant: '张三',
-    content: '寝室空调不制冷',
-    status: '待审批',
-    createTime: '2024-01-15 14:30:00'
-  },
-  {
-    id: 'AP202401002',
-    type: '调宿申请',
-    applicant: '李四',
-    content: '因身体原因申请调换低层宿舍',
-    status: '已审批',
-    createTime: '2024-01-15 15:20:00'
-  },
-  {
-    id: 'AP202401003',
-    type: '访客申请',
-    applicant: '王五',
-    content: '家长探访',
-    status: '待审批',
-    createTime: '2024-01-15 16:45:00'
-  }
-])
 </script>
 
 <style lang="scss" scoped>

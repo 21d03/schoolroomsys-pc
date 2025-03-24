@@ -148,7 +148,7 @@ const handleLogin = async () => {
         })
 
         const res = await request({
-          url: '/login',
+          url: '/api/login',
           method: 'post',
           data: {
             userId: loginForm.userId,
