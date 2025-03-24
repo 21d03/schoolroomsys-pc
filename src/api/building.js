@@ -3,9 +3,9 @@ import request from '@/utils/request'
 // 获取宿舍楼列表
 export function getBuildingList(params) {
   return request({
-    url: '/api/building/list',
-    method: 'get',
-    params
+    url: '/school/room/build/page',
+    method: 'post',
+    data: params
   })
 }
 

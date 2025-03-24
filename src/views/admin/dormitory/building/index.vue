@@ -4,11 +4,11 @@
       <el-card shadow="never">
         <div class="filter-form">
           <el-form :inline="true" :model="queryParams" ref="queryForm">
-            <el-form-item label="楼栋名称" prop="buildingName">
-              <el-input v-model="queryParams.buildingName" placeholder="请输入楼栋名称" clearable />
+            <el-form-item label="楼栋名称" prop="buildName">
+              <el-input v-model="queryParams.buildName" placeholder="请输入楼栋名称" clearable />
             </el-form-item>
-            <el-form-item label="状态" prop="status" style="width: 220px;">
-              <el-select v-model="queryParams.status" placeholder="选择状态" clearable style="width: 100%">
+            <el-form-item label="状态" prop="isUsed" style="width: 220px;">
+              <el-select v-model="queryParams.isUsed" placeholder="选择状态" clearable style="width: 100%">
                 <el-option label="正常使用" value="1" />
                 <el-option label="暂停使用" value="0" />
               </el-select>
@@ -37,7 +37,6 @@
           v-loading="loading" 
           style="width: 100%"
         >
-          <el-table-column type="index" label="序号" width="60" align="center" />
           <el-table-column prop="buildingId" label="楼栋编号" width="120" align="center" />
           <el-table-column prop="buildingName" label="楼栋名称" width="120" align="center" />
           <el-table-column prop="floorCount" label="楼层数" width="80" align="center" />
@@ -46,8 +45,9 @@
           <el-table-column prop="usedCount" label="入住率" min-width="150" align="center">
             <template #default="scope">
               <el-progress 
-                :percentage="calculateOccupancyRate(scope.row.usedCount, scope.row.roomCount)" 
-                :color="getOccupancyColor(scope.row.usedCount, scope.row.roomCount)"
+                :percentage="parseFloat(scope.row.occupancyRate?.replace('%', '') || 0)" 
+                :color="getOccupancyColor(scope.row.occupancyRate)"
+                :format="() => scope.row.occupancyRate || '0%'"
               />
             </template>
           </el-table-column>
@@ -145,11 +145,14 @@ import {
   deleteBuilding,
   getDormManagers
 } from '@/api/building'
+import axios from 'axios'  // 导入axios
 
 // 查询参数
 const queryParams = reactive({
-  buildingName: '',
-  status: ''
+  pageNum: 1,
+  pageSize: 10,
+  buildName: '',
+  isUsed: ''
 })
 
 // 表格数据
@@ -199,15 +202,10 @@ const buildingRules = {
 const buildingFormRef = ref(null)
 const queryForm = ref(null)
 
-// 计算入住率
-const calculateOccupancyRate = (used, total) => {
-  if (!total || total === 0) return 0
-  return Math.floor((used / total) * 100)
-}
-
 // 获取入住率颜色
-const getOccupancyColor = (used, total) => {
-  const rate = calculateOccupancyRate(used, total)
+const getOccupancyColor = (occupancyRate) => {
+  // 解析入住率百分比
+  const rate = parseFloat(occupancyRate?.replace('%', '') || 0)
   if (rate < 50) return '#67c23a'
   if (rate < 80) return '#e6a23c'
   return '#f56c6c'
@@ -238,68 +236,55 @@ const getList = async () => {
     const params = {
       pageNum: currentPage.value,
       pageSize: pageSize.value,
-      buildingName: queryParams.buildingName,
-      status: queryParams.status
+      buildName: queryParams.buildName,
+      isUsed: queryParams.isUsed
     }
 
-    // 模拟后端接口返回数据
-    // 实际使用时取消注释下面的代码
-    // const res = await getBuildingList(params)
-    // if (res.code === 1) {
-    //   buildingList.value = res.data.list
-    //   total.value = res.data.total
-    // } else {
-    //   ElMessage.error(res.msg || '获取宿舍楼列表失败')
-    // }
-
-    // 模拟数据，开发时删除
-    setTimeout(() => {
-      buildingList.value = [
-        {
-          id: '1',
-          buildingId: 'B001',
-          buildingName: '明德楼',
-          floorCount: 6,
-          roomCount: 60,
-          usedCount: 45,
-          managerName: '张红霞',
-          managerId: '1001',
-          status: '1',
-          remark: '男生宿舍楼'
-        },
-        {
-          id: '2',
-          buildingId: 'B002',
-          buildingName: '致远楼',
-          floorCount: 8,
-          roomCount: 80,
-          usedCount: 70,
-          managerName: '李明',
-          managerId: '1002',
-          status: '1',
-          remark: '女生宿舍楼'
-        },
-        {
-          id: '3',
-          buildingId: 'B003',
-          buildingName: '博学楼',
-          floorCount: 6,
-          roomCount: 60,
-          usedCount: 30,
-          managerName: '王芳',
-          managerId: '1003',
-          status: '0',
-          remark: '研究生宿舍楼，正在维修'
-        }
-      ]
-      total.value = 3
-      loading.value = false
-    }, 500)
+    // 直接使用axios发送请求
+    const response = await axios.post('http://localhost:8080/SchoolRoomSys/school/room/build/page', params, {
+      headers: {
+        'Content-Type': 'application/json',
+        'token': localStorage.getItem('token')
+      }
+    })
+    
+    const res = response.data
+    console.log('接口返回数据:', res)
+    
+    if (res.code === 1 && res.data && res.data.records) {
+      // 处理后端返回的数据
+      buildingList.value = res.data.records.map(item => ({
+        id: item.buildId,
+        buildingId: item.buildId,
+        buildingName: item.buildName,
+        floorCount: parseInt(item.layerNumber),
+        roomCount: parseInt(item.totalRoomNum),
+        usedCount: calculateUsedCount(item.totalRoomNum, item.occupancyRate),
+        managerName: item.hmName,
+        managerId: '', // 后端暂未提供
+        status: item.isUsed,
+        occupancyRate: item.occupancyRate || '0%',
+        remark: '' // 后端暂未提供
+      }))
+      total.value = res.data.total
+    } else {
+      buildingList.value = []
+      total.value = 0
+      ElMessage.error(res.msg || '获取宿舍楼列表失败')
+    }
+    loading.value = false
   } catch (error) {
     console.error('获取宿舍楼列表失败:', error)
     loading.value = false
     ElMessage.error('获取宿舍楼列表失败')
   }
+}
+
+// 根据入住率计算已使用房间数
+const calculateUsedCount = (totalRooms, occupancyRate) => {
+  if (!totalRooms || !occupancyRate) return 0
+  const rate = parseFloat(occupancyRate?.replace('%', '') || 0) / 100
+  return Math.round(parseInt(totalRooms) * rate)
 }
 
 // 查询
