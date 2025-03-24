@@ -21,7 +21,7 @@ export const adminRoutes = {
         {
           path: 'building',
           name: 'BuildingManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/dormitory/building/index.vue'),
           meta: { title: '宿舍楼管理' }
         },
         {

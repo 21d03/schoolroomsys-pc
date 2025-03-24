@@ -24,8 +24,8 @@
             <el-icon><House /></el-icon>
             <span>宿舍管理</span>
           </template>
-          <el-menu-item index="/admin/building">宿舍楼管理</el-menu-item>
-          <el-menu-item index="/admin/room">房间管理</el-menu-item>
+          <el-menu-item index="/admin/dormitory/building">宿舍楼管理</el-menu-item>
+          <el-menu-item index="/admin/dormitory/room">房间管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="personnel">
@@ -33,10 +33,10 @@
             <el-icon><User /></el-icon>
             <span>人员管理</span>
           </template>
-          <el-menu-item index="/admin/student">学生管理</el-menu-item>
-          <el-menu-item index="/admin/teacher">教师管理</el-menu-item>
-          <el-menu-item index="/admin/dormManager">宿管管理</el-menu-item>
-          <el-menu-item index="/admin/maintenance">维修人员管理</el-menu-item>
+          <el-menu-item index="/admin/personnel/student">学生管理</el-menu-item>
+          <el-menu-item index="/admin/personnel/teacher">教师管理</el-menu-item>
+          <el-menu-item index="/admin/personnel/dorm-manager">宿管管理</el-menu-item>
+          <el-menu-item index="/admin/personnel/maintenance">维修人员管理</el-menu-item>
         </el-sub-menu>
 
         <el-menu-item index="/admin/approval">
@@ -49,17 +49,17 @@
             <el-icon><PieChart /></el-icon>
             <span>数据统计</span>
           </template>
-          <el-menu-item index="/admin/dormitoryAnalysis">宿舍资源分析</el-menu-item>
-          <el-menu-item index="/admin/personnelAnalysis">人员分布统计</el-menu-item>
+          <el-menu-item index="/admin/statistics/resource">宿舍资源分析</el-menu-item>
+          <el-menu-item index="/admin/statistics/distribution">人员分布统计</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="system">
+        <el-sub-menu index="settings">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统设置</span>
           </template>
-          <el-menu-item index="/admin/permission">权限配置</el-menu-item>
-          <el-menu-item index="/admin/college">学院/班级管理</el-menu-item>
+          <el-menu-item index="/admin/settings/permission">权限配置</el-menu-item>
+          <el-menu-item index="/admin/settings/college">学院/班级管理</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
