@@ -62,6 +62,13 @@
             <template #default="scope">
               <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
               <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+              <el-button 
+                :type="scope.row.status === '1' ? 'warning' : 'success'" 
+                link 
+                @click="handleStatusChange(scope.row)"
+              >
+                {{ scope.row.status === '1' ? '暂停使用' : '恢复使用' }}
+              </el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -512,6 +519,70 @@ const submitForm = async () => {
         ElMessage.error('添加失败')
       }
     }
+  })
+}
+
+// 状态变更
+const handleStatusChange = (row) => {
+  const statusText = row.status === '1' ? '暂停使用' : '恢复使用'
+  const confirmText = row.status === '1' ? 
+    `确定要暂停使用宿舍楼 ${row.buildingName} 吗？` : 
+    `确定要恢复使用宿舍楼 ${row.buildingName} 吗？`
+  
+  ElMessageBox.confirm(
+    confirmText,
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: row.status === '1' ? 'warning' : 'info'
+    }
+  ).then(async () => {
+    try {
+      const newStatus = row.status === '1' ? '0' : '1'
+      
+      // 使用JSON格式发送请求
+      const requestData = {
+        buildId: row.buildingId,
+        isUsed: newStatus
+      };
+      
+      const response = await axios.put(
+        'http://localhost:8080/SchoolRoomSys/school/room/build/status',
+        requestData,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'token': localStorage.getItem('token')
+          }
+        }
+      )
+
+      if (response.data.code === 200 || response.data.code === 1) {
+        ElMessage({
+          type: 'success',
+          message: `${statusText}成功`
+        })
+        // 刷新列表
+        getList()
+      } else {
+        ElMessage({
+          type: 'error',
+          message: response.data.msg || `${statusText}失败`
+        })
+      }
+    } catch (error) {
+      console.error(`${statusText}失败:`, error)
+      ElMessage({
+        type: 'error',
+        message: `${statusText}失败: ` + (error.response?.data?.msg || '未知错误')
+      })
+    }
+  }).catch(() => {
+    ElMessage({
+      type: 'info',
+      message: '已取消操作'
+    })
   })
 }
 
