@@ -94,24 +94,50 @@
         ref="buildingFormRef" 
         label-width="100px"
       >
-        <el-form-item label="楼栋名称" prop="buildingName">
-          <el-input v-model="buildingForm.buildingName" placeholder="请输入楼栋名称" />
+        <el-form-item label="楼栋编号" prop="buildId">
+          <el-input v-model="buildingForm.buildId" placeholder="请输入楼栋编号" />
         </el-form-item>
-        <el-form-item label="楼层数" prop="floorCount">
-          <el-input-number v-model="buildingForm.floorCount" :min="1" :max="30" />
+        <el-form-item label="楼栋名称" prop="buildName">
+          <el-input v-model="buildingForm.buildName" placeholder="请输入楼栋名称" />
         </el-form-item>
-        <el-form-item label="负责宿管" prop="managerId">
-          <el-select v-model="buildingForm.managerId" placeholder="请选择宿管" filterable>
+        <el-form-item label="负责宿管" prop="hmId">
+          <el-select 
+            v-model="buildingForm.hmId" 
+            placeholder="请选择宿管" 
+            filterable 
+            style="width: 100%"
+          >
             <el-option 
               v-for="item in managerOptions" 
               :key="item.value" 
               :label="item.label" 
               :value="item.value" 
-            />
+            >
+              <span>{{ item.label }}</span>
+            </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-radio-group v-model="buildingForm.status">
+        <el-form-item label="所属校区" prop="campus">
+          <el-select v-model="buildingForm.campus" placeholder="请选择校区">
+            <el-option label="梁园校区" value="1" />
+            <el-option label="睢阳校区" value="2" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="楼层数" prop="layerNumber">
+          <el-input-number v-model="buildingForm.layerNumber" :min="1" :max="30" />
+        </el-form-item>
+        <el-form-item label="房间总数" prop="totalRoomNum">
+          <el-input-number v-model="buildingForm.totalRoomNum" :min="1" :max="1000" />
+        </el-form-item>
+        <el-form-item label="宿舍楼类型" prop="buildType">
+          <el-select v-model="buildingForm.buildType" placeholder="请选择宿舍楼类型">
+            <el-option label="男寝" value="1" />
+            <el-option label="女寝" value="2" />
+            <el-option label="混合" value="3" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="使用状态" prop="isUsed">
+          <el-radio-group v-model="buildingForm.isUsed">
             <el-radio label="1">正常使用</el-radio>
             <el-radio label="0">暂停使用</el-radio>
           </el-radio-group>
@@ -173,28 +199,45 @@ const managerOptions = ref([
 const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const buildingForm = reactive({
-  id: '',
-  buildingName: '',
-  floorCount: 6,
-  managerId: '',
-  status: '1',
-  remark: ''
+  buildId: '',
+  buildName: '',
+  hmId: '',
+  campus: '1',
+  layerNumber: 6,
+  totalRoomNum: 240,
+  buildType: '1',
+  isUsed: '1',
+  remark: '',
+  roomDetails: []
 })
 
 // 表单校验规则
 const buildingRules = {
-  buildingName: [
+  buildId: [
+    { required: true, message: '请输入楼栋编号', trigger: 'blur' },
+    { pattern: /^\d+$/, message: '楼栋编号只能是数字', trigger: 'blur' }
+  ],
+  buildName: [
     { required: true, message: '请输入楼栋名称', trigger: 'blur' },
     { min: 2, max: 20, message: '长度在 2 到 20 个字符', trigger: 'blur' }
   ],
-  floorCount: [
-    { required: true, message: '请输入楼层数', trigger: 'change' }
-  ],
-  managerId: [
+  hmId: [
     { required: true, message: '请选择负责宿管', trigger: 'change' }
   ],
-  status: [
-    { required: true, message: '请选择状态', trigger: 'change' }
+  campus: [
+    { required: true, message: '请选择校区', trigger: 'change' }
+  ],
+  layerNumber: [
+    { required: true, message: '请输入楼层数', trigger: 'change' }
+  ],
+  totalRoomNum: [
+    { required: true, message: '请输入房间总数', trigger: 'change' }
+  ],
+  buildType: [
+    { required: true, message: '请选择宿舍楼类型', trigger: 'change' }
+  ],
+  isUsed: [
+    { required: true, message: '请选择使用状态', trigger: 'change' }
   ]
 }
 
@@ -214,17 +257,26 @@ const getOccupancyColor = (occupancyRate) => {
 // 获取宿管列表
 const fetchDormManagers = async () => {
   try {
-    // 模拟获取宿管列表
-    // 实际使用时取消注释下面的代码
-    // const res = await getDormManagers()
-    // if (res.code === 1) {
-    //   managerOptions.value = res.data.map(item => ({
-    //     value: item.id,
-    //     label: item.name
-    //   }))
-    // }
+    const response = await axios.get('http://localhost:8080/SchoolRoomSys/school/house-master/unassigned', {
+      headers: {
+        'Content-Type': 'application/json',
+        'token': localStorage.getItem('token')
+      }
+    })
+
+    if (response.data.code === 1) {
+      // 将后端返回的宿管数据转换为选项格式
+      managerOptions.value = response.data.data.map(item => ({
+        value: item.hmId,
+        label: `${item.hmName}（${item.hmPhone}）` // 显示姓名和电话
+      }))
+      console.log('获取到的宿管列表:', managerOptions.value)
+    } else {
+      ElMessage.error(response.data.msg || '获取宿管列表失败')
+    }
   } catch (error) {
     console.error('获取宿管列表失败:', error)
+    ElMessage.error('获取宿管列表失败')
   }
 }
 
@@ -312,9 +364,11 @@ const handleCurrentChange = (val) => {
 }
 
 // 添加宿舍楼
-const handleAdd = () => {
+const handleAdd = async () => {
   resetForm()
   dialogTitle.value = '新增宿舍楼'
+  // 打开对话框前先获取最新的宿管列表
+  await fetchDormManagers()
   dialogVisible.value = true
 }
 
@@ -371,12 +425,18 @@ const handleDelete = (row) => {
 
 // 重置表单
 const resetForm = () => {
-  buildingForm.id = ''
-  buildingForm.buildingName = ''
-  buildingForm.floorCount = 6
-  buildingForm.managerId = ''
-  buildingForm.status = '1'
-  buildingForm.remark = ''
+  Object.assign(buildingForm, {
+    buildId: '',
+    buildName: '',
+    hmId: '',
+    campus: '1',
+    layerNumber: 6,
+    totalRoomNum: 240,
+    buildType: '1',
+    isUsed: '1',
+    remark: '',
+    roomDetails: []
+  })
   buildingFormRef.value?.resetFields()
 }
 
@@ -385,41 +445,58 @@ const submitForm = async () => {
   buildingFormRef.value?.validate(async (valid) => {
     if (valid) {
       try {
+        // 构建房间详情数据
+        const roomDetails = []
+        const baseRoomNum = parseInt(buildingForm.totalRoomNum) / parseInt(buildingForm.layerNumber)
+        
+        for (let floor = 1; floor <= buildingForm.layerNumber; floor++) {
+          for (let room = 1; room <= baseRoomNum; room++) {
+            const roomId = `${buildingForm.buildId}${floor.toString().padStart(2, '0')}${room.toString().padStart(2, '0')}`
+            roomDetails.push({
+              roomId,
+              isMixed: "2", // 默认不混寝
+              collegeIds: "05", // 默认学院ID
+              manageTeacherId: "0500001", // 默认管理教师ID
+              roomType: "4" // 默认4人间
+            })
+          }
+        }
+
         const formData = {
-          buildingName: buildingForm.buildingName,
-          floorCount: buildingForm.floorCount,
-          managerId: buildingForm.managerId,
-          status: buildingForm.status,
-          remark: buildingForm.remark
+          buildId: buildingForm.buildId,
+          buildName: buildingForm.buildName,
+          hmId: buildingForm.hmId,
+          campus: buildingForm.campus,
+          layerNumber: buildingForm.layerNumber.toString(),
+          totalRoomNum: buildingForm.totalRoomNum.toString(),
+          buildType: buildingForm.buildType,
+          isUsed: buildingForm.isUsed,
+          remark: buildingForm.remark,
+          roomDetails
         }
 
-        let res
-        if (buildingForm.id) {
-          // 更新宿舍楼
-          // 实际使用时取消注释下面的代码
-          // res = await updateBuilding(buildingForm.id, formData)
-          ElMessage.success('修改成功')
-        } else {
-          // 新增宿舍楼
-          // 实际使用时取消注释下面的代码
-          // res = await addBuilding(formData)
+        // 发送请求
+        const response = await axios.post(
+          'http://localhost:8080/SchoolRoomSys/school/room/build/add',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'token': localStorage.getItem('token')
+            }
+          }
+        )
+
+        if (response.data.code === 1) {
           ElMessage.success('添加成功')
+          dialogVisible.value = false
+          getList()
+        } else {
+          ElMessage.error(response.data.msg || '添加失败')
         }
-
-        // if (res.code === 1) {
-        //   ElMessage.success(buildingForm.id ? '修改成功' : '添加成功')
-        //   dialogVisible.value = false
-        //   getList()
-        // } else {
-        //   ElMessage.error(res.msg || (buildingForm.id ? '修改失败' : '添加失败'))
-        // }
-
-        // 模拟成功，关闭对话框并刷新列表
-        dialogVisible.value = false
-        getList()
       } catch (error) {
-        console.error(buildingForm.id ? '修改宿舍楼失败:' : '添加宿舍楼失败:', error)
-        ElMessage.error(buildingForm.id ? '修改失败' : '添加失败')
+        console.error('添加宿舍楼失败:', error)
+        ElMessage.error('添加失败')
       }
     }
   })
