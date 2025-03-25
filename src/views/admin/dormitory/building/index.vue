@@ -60,7 +60,6 @@
           </el-table-column>
           <el-table-column label="操作" width="180" align="center">
             <template #default="scope">
-              <el-button type="primary" link @click="handleView(scope.row)">查看</el-button>
               <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
               <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
             </template>
@@ -387,16 +386,11 @@ const handleEdit = (row) => {
   dialogVisible.value = true
 }
 
-// 查看宿舍楼
-const handleView = (row) => {
-  ElMessage.info(`查看宿舍楼: ${row.buildingName}，功能开发中...`)
-}
-
 // 删除宿舍楼
 const handleDelete = (row) => {
   ElMessageBox.confirm(
     `确定要删除宿舍楼 ${row.buildingName} 吗？`,
-    '提示',
+    '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
@@ -404,23 +398,42 @@ const handleDelete = (row) => {
     }
   ).then(async () => {
     try {
-      // 实际使用时取消注释下面的代码
-      // const res = await deleteBuilding(row.id)
-      // if (res.code === 1) {
-      //   ElMessage.success('删除成功')
-      //   getList()
-      // } else {
-      //   ElMessage.error(res.msg || '删除失败')
-      // }
+      // 调用删除接口
+      const response = await axios.delete(
+        `http://localhost:8080/SchoolRoomSys/school/room/build/delete/${row.buildingId}`,
+        {
+          headers: {
+            'token': localStorage.getItem('token')
+          }
+        }
+      )
 
-      // 模拟删除成功
-      ElMessage.success('删除成功')
-      getList()
+      if (response.data.code === 1) {
+        ElMessage({
+          type: 'success',
+          message: '删除成功'
+        })
+        // 刷新列表
+        getList()
+      } else {
+        ElMessage({
+          type: 'error',
+          message: response.data.msg || '删除失败'
+        })
+      }
     } catch (error) {
       console.error('删除宿舍楼失败:', error)
-      ElMessage.error('删除失败')
+      ElMessage({
+        type: 'error',
+        message: '删除失败: ' + (error.response?.data?.msg || '未知错误')
+      })
     }
-  }).catch(() => {})
+  }).catch(() => {
+    ElMessage({
+      type: 'info',
+      message: '已取消删除'
+    })
+  })
 }
 
 // 重置表单
