@@ -27,7 +27,7 @@ export const adminRoutes = {
         {
           path: 'room',
           name: 'RoomManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/dormitory/room/index.vue'),
           meta: { title: '房间管理' }
         }
       ]

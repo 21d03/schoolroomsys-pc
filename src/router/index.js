@@ -14,7 +14,7 @@ const router = createRouter({
       name: 'Login',
       component: Login
     },
-    adminRoutes
+    adminRoutes  // 这里直接使用 adminRoutes 对象，因为它已经包含了完整的路由配置
   ]
 })
 
@@ -57,7 +57,7 @@ router.beforeEach((to, from, next) => {
 
 // 设置页面标题
 router.afterEach((to) => {
-  document.title = '宿舍管理系统'
+  document.title = to.meta.title ? `${to.meta.title} - 宿舍管理系统` : '宿舍管理系统'
 })
 
 export default router
