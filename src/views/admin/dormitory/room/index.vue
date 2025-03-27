@@ -75,8 +75,9 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="250" align="center">
+          <el-table-column label="操作" min-width="280" align="center">
             <template #default="scope">
+              <el-button type="primary" link @click="handleView(scope.row)">查看</el-button>
               <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
               <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
               <el-button 
@@ -118,7 +119,7 @@
         label-width="100px"
       >
         <el-form-item label="宿舍楼" prop="buildId">
-          <el-select v-model="roomForm.buildId" placeholder="请选择宿舍楼" style="width: 100%">
+          <el-select v-model="roomForm.buildId" placeholder="请选择宿舍楼" style="width: 100%" :disabled="isView">
             <el-option 
               v-for="item in buildingOptions" 
               :key="item.value" 
@@ -128,23 +129,23 @@
           </el-select>
         </el-form-item>
         <el-form-item label="房间号" prop="roomId">
-          <el-input v-model="roomForm.roomId" placeholder="请输入房间号" />
+          <el-input v-model="roomForm.roomId" placeholder="请输入房间号" :disabled="isView" />
         </el-form-item>
         <el-form-item label="房间类型" prop="roomType">
-          <el-select v-model="roomForm.roomType" placeholder="请选择房间类型" style="width: 100%">
+          <el-select v-model="roomForm.roomType" placeholder="请选择房间类型" style="width: 100%" :disabled="isView">
             <el-option label="四人间" value="4" />
             <el-option label="六人间" value="6" />
             <el-option label="八人间" value="8" />
           </el-select>
         </el-form-item>
         <el-form-item label="是否混寝" prop="isMixed">
-          <el-radio-group v-model="roomForm.isMixed">
+          <el-radio-group v-model="roomForm.isMixed" :disabled="isView">
             <el-radio label="1">是</el-radio>
             <el-radio label="2">否</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="所属学院" prop="collegeIds">
-          <el-select v-model="roomForm.collegeIds" placeholder="请选择学院" style="width: 100%">
+          <el-select v-model="roomForm.collegeIds" placeholder="请选择学院" style="width: 100%" :disabled="isView">
             <el-option 
               v-for="item in collegeOptions" 
               :key="item.value" 
@@ -154,7 +155,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="管理老师" prop="manageTeacherId">
-          <el-select v-model="roomForm.manageTeacherId" placeholder="请选择管理老师" style="width: 100%">
+          <el-select v-model="roomForm.manageTeacherId" placeholder="请选择管理老师" style="width: 100%" :disabled="isView">
             <el-option 
               v-for="item in teacherOptions" 
               :key="item.value" 
@@ -166,9 +167,51 @@
       </el-form>
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitForm">确定</el-button>
+          <el-button @click="dialogVisible = false">{{ isView ? '关闭' : '取消' }}</el-button>
+          <el-button v-if="!isView" type="primary" @click="submitForm">确定</el-button>
         </div>
+      </template>
+    </el-dialog>
+
+    <!-- 房间详情对话框 -->
+    <el-dialog 
+      title="房间详情" 
+      v-model="detailDialogVisible" 
+      width="700px"
+    >
+      <div class="room-detail">
+        <el-descriptions title="基本信息" :column="2" border>
+          <el-descriptions-item label="宿舍楼">{{ roomDetail.buildName }}</el-descriptions-item>
+          <el-descriptions-item label="房间号">{{ roomDetail.roomId }}</el-descriptions-item>
+          <el-descriptions-item label="房间类型">{{ roomDetail.roomType + '人间' }}</el-descriptions-item>
+          <el-descriptions-item label="是否混寝">{{ roomDetail.isMixed === '1' ? '是' : '否' }}</el-descriptions-item>
+          <el-descriptions-item label="使用状态" :span="2">
+            <el-tag :type="roomDetail.status === '1' ? 'success' : 'danger'">
+              {{ roomDetail.status === '1' ? '正常使用' : '暂停使用' }}
+            </el-tag>
+          </el-descriptions-item>
+        </el-descriptions>
+        
+        <div class="students-title">
+          <h3>入住学生信息</h3>
+          <span>入住人数：{{ roomDetail.students?.length || 0 }}/{{ roomDetail.roomType }}</span>
+        </div>
+        
+        <el-table v-if="roomDetail.students && roomDetail.students.length > 0" :data="roomDetail.students" border style="width: 100%">
+          <el-table-column prop="studentName" label="姓名" width="100" align="center" />
+          <el-table-column prop="studentSex" label="性别" width="80" align="center" />
+          <el-table-column prop="studentId" label="学号" width="120" align="center" />
+          <el-table-column prop="studentPhone" label="联系电话" width="120" align="center" />
+          <el-table-column prop="collegeName" label="所属学院" min-width="150" align="center" />
+          <el-table-column prop="teacherName" label="辅导员" width="100" align="center" />
+          <el-table-column prop="teacherPhone" label="辅导员电话" width="120" align="center" />
+        </el-table>
+        <el-empty v-else description="暂无入住学生" />
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="detailDialogVisible = false">关闭</el-button>
+        </span>
       </template>
     </el-dialog>
   </div>
@@ -327,6 +370,7 @@ const handleCurrentChange = (val) => {
 const handleAdd = () => {
   resetForm()
   dialogTitle.value = '新增房间'
+  isView.value = false
   dialogVisible.value = true
 }
 
@@ -334,6 +378,7 @@ const handleAdd = () => {
 const handleEdit = (row) => {
   resetForm()
   dialogTitle.value = '编辑房间'
+  isView.value = false
   Object.assign(roomForm, row)
   dialogVisible.value = true
 }
@@ -444,6 +489,53 @@ const handleStatusChange = (row) => {
   })
 }
 
+// 查看房间
+const handleView = async (row) => {
+  try {
+    loading.value = true
+    const response = await axios.get(
+      'http://localhost:8080/SchoolRoomSys/school/room/build/room/detail',
+      {
+        params: {
+          buildId: row.buildId,
+          roomId: row.roomId
+        },
+        headers: {
+          'token': localStorage.getItem('token')
+        }
+      }
+    )
+
+    if (response.data.code === 200 || response.data.code === 1) {
+      roomDetail.value = response.data.data
+      detailDialogVisible.value = true
+    } else {
+      ElMessage.error(response.data.msg || '获取房间详情失败')
+    }
+  } catch (error) {
+    console.error('获取房间详情失败:', error)
+    ElMessage.error('获取房间详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
+// 在 script setup 中添加 isView 变量
+const isView = ref(false)
+
+// 房间详情相关
+const detailDialogVisible = ref(false)
+const roomDetail = ref({
+  buildName: '',
+  roomId: '',
+  roomType: '',
+  isMixed: '',
+  status: '',
+  manageTeacherName: '',
+  collegeNames: '',
+  students: []
+})
+
 // 页面加载时获取数据
 onMounted(() => {
   getList()
@@ -479,6 +571,19 @@ onMounted(() => {
     margin-top: 20px;
     display: flex;
     justify-content: flex-end;
+  }
+
+  .room-detail {
+    .students-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 20px 0 10px;
+      
+      h3 {
+        margin: 0;
+      }
+    }
   }
 }
 </style>
