@@ -459,11 +459,13 @@ const handleStatusChange = (row) => {
     try {
       const response = await axios.put(
         'http://localhost:8080/SchoolRoomSys/school/room/build/room/status',
+        null,
         {
-          roomId: row.roomId,
-          status: row.status === '1' ? '0' : '1'
-        },
-        {
+          params: {
+            buildId: row.buildId,
+            roomId: row.roomId,
+            status: row.status === '1' ? '0' : '1'
+          },
           headers: {
             'Content-Type': 'application/json',
             'token': localStorage.getItem('token')
@@ -471,7 +473,7 @@ const handleStatusChange = (row) => {
         }
       )
 
-      if (response.data.code === 200 || response.data.code === 1) {
+      if (response.data.code === 0 || response.data.code === 1) {
         ElMessage.success(`${statusText}成功`)
         getList()
       } else {
