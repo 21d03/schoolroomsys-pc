@@ -194,6 +194,47 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 编辑房间对话框 -->
+    <el-dialog 
+      title="编辑房间" 
+      v-model="editDialogVisible" 
+      width="500px" 
+      :close-on-click-modal="false"
+    >
+      <el-form 
+        :model="editForm" 
+        :rules="editRules" 
+        ref="editFormRef" 
+        label-width="100px"
+      >
+        <el-form-item label="宿舍楼" prop="buildName">
+          <el-input v-model="editForm.buildName" placeholder="请输入宿舍楼" disabled />
+        </el-form-item>
+        <el-form-item label="房间号" prop="roomId">
+          <el-input v-model="editForm.roomId" placeholder="请输入房间号" disabled />
+        </el-form-item>
+        <el-form-item label="房间类型" prop="roomType">
+          <el-select v-model="editForm.roomType" placeholder="请选择房间类型" style="width: 100%">
+            <el-option label="四人间" value="4" />
+            <el-option label="六人间" value="6" />
+            <el-option label="八人间" value="8" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="是否混寝" prop="isMixed">
+          <el-radio-group v-model="editForm.isMixed">
+            <el-radio label="1">是</el-radio>
+            <el-radio label="2">否</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditForm">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -349,11 +390,12 @@ const handleAdd = () => {
 
 // 编辑房间
 const handleEdit = (row) => {
-  resetForm()
-  dialogTitle.value = '编辑房间'
-  isView.value = false
-  Object.assign(roomForm, row)
-  dialogVisible.value = true
+  editForm.buildId = row.buildId
+  editForm.roomId = row.roomId
+  editForm.buildName = row.buildName
+  editForm.roomType = row.roomType
+  editForm.isMixed = row.isMixed
+  editDialogVisible.value = true
 }
 
 // 删除房间
@@ -571,6 +613,67 @@ const getBuildingList = async () => {
     console.error('获取宿舍楼列表失败:', error)
     ElMessage.error('获取宿舍楼列表失败')
   }
+}
+
+// 编辑房间相关
+const editDialogVisible = ref(false)
+const editForm = reactive({
+  buildId: '',
+  roomId: '',
+  buildName: '',
+  roomType: '',
+  isMixed: ''
+})
+
+// 编辑表单验证规则
+const editRules = {
+  roomType: [
+    { required: true, message: '请选择房间类型', trigger: 'change' }
+  ],
+  isMixed: [
+    { required: true, message: '请选择是否混寝', trigger: 'change' }
+  ]
+}
+
+const editFormRef = ref(null)
+
+// 提交编辑表单
+const submitEditForm = async () => {
+  editFormRef.value?.validate(async (valid) => {
+    if (valid) {
+      try {
+        const params = {
+          buildId: editForm.buildId,
+          roomId: editForm.roomId,
+          roomType: editForm.roomType,
+          isMixed: editForm.isMixed
+        }
+
+        const response = await axios.put(
+          'http://localhost:8080/SchoolRoomSys/school/room/build/room/update',
+          params,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'token': localStorage.getItem('token')
+            }
+          }
+        )
+
+        if ((response.data.code === 0 || response.data.code === 1) && response.data.data === true) {
+          ElMessage.success('更新成功')
+          editDialogVisible.value = false
+          getList()
+        } else {
+          // 显示后端返回的错误信息
+          ElMessage.error(response.data.msg || '操作失败')
+        }
+      } catch (error) {
+        console.error('更新房间失败:', error)
+        ElMessage.error(error.response?.data?.msg || '更新失败')
+      }
+    }
+  })
 }
 
 // 页面加载时获取数据
