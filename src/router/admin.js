@@ -41,7 +41,7 @@ export const adminRoutes = {
         {
           path: 'student',
           name: 'StudentManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/personnel/student/index.vue'),
           meta: { title: '学生管理' }
         },
         {

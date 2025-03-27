@@ -26,28 +26,29 @@ request.interceptors.request.use(
 // 响应拦截器
 request.interceptors.response.use(
   response => {
-    const res = response.data
-    
-    if (res.code === 0) {
-      return res
-    }
-    
-    // token过期或无效
-    if (res.code === 401) {
-      ElMessage.error('登录已过期，请重新登录')
-      localStorage.removeItem('token')
-      localStorage.removeItem('userInfo')
-      router.push('/login')
-      return Promise.reject(new Error('登录已过期'))
-    }
-    
-    ElMessage.error(res.msg || '请求失败')
-    return Promise.reject(new Error(res.msg || '请求失败'))
+    // 直接返回响应，在业务代码中处理状态码
+    return response
   },
   error => {
     console.error('响应错误:', error)
     if (error.response) {
-      ElMessage.error(error.response.data.msg || '请求失败')
+      // HTTP 错误状态码
+      const status = error.response.status
+      
+      if (status === 401) {
+        ElMessage.error('登录已过期，请重新登录')
+        localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        router.push('/login')
+      } else if (status === 403) {
+        ElMessage.error('没有权限访问该资源')
+      } else if (status === 404) {
+        ElMessage.error('请求的资源不存在')
+      } else if (status === 500) {
+        ElMessage.error('服务器错误，请联系管理员')
+      } else {
+        ElMessage.error(error.response.data?.msg || '请求失败')
+      }
     } else if (error.request) {
       ElMessage.error('网络连接失败，请检查网络设置')
     } else {
