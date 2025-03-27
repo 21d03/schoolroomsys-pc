@@ -144,26 +144,6 @@
             <el-radio label="2">否</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="所属学院" prop="collegeIds">
-          <el-select v-model="roomForm.collegeIds" placeholder="请选择学院" style="width: 100%" :disabled="isView">
-            <el-option 
-              v-for="item in collegeOptions" 
-              :key="item.value" 
-              :label="item.label" 
-              :value="item.value" 
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="管理老师" prop="manageTeacherId">
-          <el-select v-model="roomForm.manageTeacherId" placeholder="请选择管理老师" style="width: 100%" :disabled="isView">
-            <el-option 
-              v-for="item in teacherOptions" 
-              :key="item.value" 
-              :label="item.label" 
-              :value="item.value" 
-            />
-          </el-select>
-        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -253,9 +233,7 @@ const roomForm = reactive({
   buildId: '',
   roomId: '',
   roomType: '4',
-  isMixed: '2',
-  collegeIds: '',
-  manageTeacherId: ''
+  isMixed: '2'
 })
 
 // 表单校验规则
@@ -264,19 +242,14 @@ const roomRules = {
     { required: true, message: '请选择宿舍楼', trigger: 'change' }
   ],
   roomId: [
-    { required: true, message: '请输入房间号', trigger: 'blur' }
+    { required: true, message: '请输入房间号', trigger: 'blur' },
+    { pattern: /^\d{3,}$/, message: '房间号必须是3位以上数字', trigger: 'blur' }
   ],
   roomType: [
     { required: true, message: '请选择房间类型', trigger: 'change' }
   ],
   isMixed: [
     { required: true, message: '请选择是否混寝', trigger: 'change' }
-  ],
-  collegeIds: [
-    { required: true, message: '请选择所属学院', trigger: 'change' }
-  ],
-  manageTeacherId: [
-    { required: true, message: '请选择管理老师', trigger: 'change' }
   ]
 }
 
@@ -416,9 +389,7 @@ const resetForm = () => {
     buildId: '',
     roomId: '',
     roomType: '4',
-    isMixed: '2',
-    collegeIds: '',
-    manageTeacherId: ''
+    isMixed: '2'
   })
   roomFormRef.value?.resetFields()
 }
@@ -428,13 +399,37 @@ const submitForm = async () => {
   roomFormRef.value?.validate(async (valid) => {
     if (valid) {
       try {
-        // TODO: 调用后端API保存数据
-        ElMessage.success(dialogTitle.value === '新增房间' ? '添加成功' : '更新成功')
-        dialogVisible.value = false
-        getList()
+        const params = {
+          buildId: roomForm.buildId,
+          layerNumber: roomForm.roomId.substring(0, 1), // 从房间号中提取楼层
+          roomId: roomForm.roomId,
+          isMixed: roomForm.isMixed,
+          roomType: roomForm.roomType,
+          status: '1' // 默认正常使用
+        }
+
+        const response = await axios.post(
+          'http://localhost:8080/SchoolRoomSys/school/room/build/room/add',
+          params,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'token': localStorage.getItem('token')
+            }
+          }
+        )
+
+        if ((response.data.code === 0 || response.data.code === 1) && response.data.data === true) {
+          ElMessage.success(dialogTitle.value === '新增房间' ? '添加成功' : '更新成功')
+          dialogVisible.value = false
+          getList()
+        } else {
+          // 显示后端返回的错误信息
+          ElMessage.error(response.data.msg || '操作失败')
+        }
       } catch (error) {
         console.error('操作失败:', error)
-        ElMessage.error('操作失败')
+        ElMessage.error(error.response?.data?.msg || '操作失败')
       }
     }
   })
@@ -544,9 +539,44 @@ const roomDetail = ref({
   students: []
 })
 
+// 获取宿舍楼列表
+const getBuildingList = async () => {
+  try {
+    const response = await axios.post(
+      'http://localhost:8080/SchoolRoomSys/school/room/build/page',
+      {
+        pageNum: 1,
+        pageSize: 999, // 设置较大的数值以获取所有数据
+        // status: '1', // 只获取正常使用的宿舍楼
+        isUsed: '1' // 添加参数，只获取正常使用的宿舍楼
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'token': localStorage.getItem('token')
+        }
+      }
+    )
+
+    if (response.data.code === 200 || response.data.code === 1) {
+      const { records } = response.data.data
+      buildingOptions.value = records.map(item => ({
+        label: item.buildName,
+        value: item.buildId
+      }))
+    } else {
+      ElMessage.error(response.data.msg || '获取宿舍楼列表失败')
+    }
+  } catch (error) {
+    console.error('获取宿舍楼列表失败:', error)
+    ElMessage.error('获取宿舍楼列表失败')
+  }
+}
+
 // 页面加载时获取数据
 onMounted(() => {
   getList()
+  getBuildingList() // 获取宿舍楼列表
 })
 </script>
 
