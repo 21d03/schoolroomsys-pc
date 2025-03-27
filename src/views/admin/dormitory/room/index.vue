@@ -473,11 +473,17 @@ const handleStatusChange = (row) => {
         }
       )
 
-      if (response.data.code === 0 || response.data.code === 1) {
+      // 检查响应状态和消息
+      if (response.data.code === 0 && response.data.data === true) {
         ElMessage.success(`${statusText}成功`)
         getList()
       } else {
-        ElMessage.error(response.data.msg || `${statusText}失败`)
+        // 即使 code 为 1 但有 msg，也显示为警告信息
+        if (response.data.msg) {
+          ElMessage.warning(response.data.msg)
+        } else {
+          ElMessage.error(`${statusText}失败`)
+        }
       }
     } catch (error) {
       console.error(`${statusText}失败:`, error)
