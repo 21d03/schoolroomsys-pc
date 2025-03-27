@@ -180,6 +180,7 @@
         <el-table v-if="roomDetail.students && roomDetail.students.length > 0" :data="roomDetail.students" border style="width: 100%">
           <el-table-column prop="studentName" label="姓名" width="100" align="center" />
           <el-table-column prop="studentSex" label="性别" width="80" align="center" />
+          <el-table-column prop="bedNo" label="床位号" width="80" align="center" />
           <el-table-column prop="studentId" label="学号" width="120" align="center" />
           <el-table-column prop="studentPhone" label="联系电话" width="120" align="center" />
           <el-table-column prop="collegeName" label="所属学院" min-width="150" align="center" />
@@ -401,7 +402,7 @@ const handleEdit = (row) => {
 // 删除房间
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定要删除房间 ${row.roomId} 吗？`,
+    `确定要删除房间 ${row.roomId} 吗？删除后无法恢复，请谨慎操作。`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -410,12 +411,48 @@ const handleDelete = (row) => {
     }
   ).then(async () => {
     try {
-      // TODO: 调用后端删除API
-      ElMessage.success('删除成功')
-      getList()
+      loading.value = true
+      const response = await axios.delete(
+        'http://localhost:8080/SchoolRoomSys/school/room/build/room/delete',
+        {
+          params: {
+            buildId: row.buildId,
+            roomId: row.roomId
+          },
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'token': localStorage.getItem('token')
+          }
+        }
+      )
+
+      if ((response.data.code === 0 || response.data.code === 1) && response.data.data === true) {
+        ElMessage.success('删除成功')
+        getList() // 刷新列表
+      } else if (response.data.code === 1 && response.data.msg) {
+        // 处理业务错误，如房间内有学生等情况
+        ElMessage.warning(response.data.msg)
+      } else if (response.status === 401) {
+        ElMessage.error('未授权，请重新登录')
+        // 可以在此处添加重定向到登录页的逻辑
+      } else {
+        ElMessage.error(response.data.msg || '删除失败')
+      }
     } catch (error) {
       console.error('删除房间失败:', error)
-      ElMessage.error('删除失败')
+      if (error.response) {
+        if (error.response.status === 401) {
+          ElMessage.error('未授权，请重新登录')
+        } else if (error.response.status === 500) {
+          ElMessage.error('服务器错误或参数错误')
+        } else {
+          ElMessage.error(error.response.data?.msg || '删除失败')
+        }
+      } else {
+        ElMessage.error('网络错误，请稍后重试')
+      }
+    } finally {
+      loading.value = false
     }
   }).catch(() => {
     ElMessage({
@@ -546,20 +583,31 @@ const handleView = async (row) => {
           roomId: row.roomId
         },
         headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
           'token': localStorage.getItem('token')
         }
       }
     )
 
-    if (response.data.code === 200 || response.data.code === 1) {
+    if ((response.data.code === 0 || response.data.code === 1) && response.data.data) {
       roomDetail.value = response.data.data
       detailDialogVisible.value = true
     } else {
-      ElMessage.error(response.data.msg || '获取房间详情失败')
+      ElMessage.error(response.data.message || response.data.msg || '获取房间详情失败')
     }
   } catch (error) {
     console.error('获取房间详情失败:', error)
-    ElMessage.error('获取房间详情失败')
+    if (error.response) {
+      if (error.response.status === 401) {
+        ElMessage.error('未授权，请重新登录')
+      } else if (error.response.status === 500) {
+        ElMessage.error('服务器错误或参数错误')
+      } else {
+        ElMessage.error(error.response.data?.message || error.response.data?.msg || '获取房间详情失败')
+      }
+    } else {
+      ElMessage.error('网络错误，请稍后重试')
+    }
   } finally {
     loading.value = false
   }
