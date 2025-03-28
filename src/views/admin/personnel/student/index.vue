@@ -142,12 +142,26 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="专业" prop="profession">
-              <el-input v-model="studentForm.profession" placeholder="请输入专业" maxlength="50" />
+              <el-select v-model="studentForm.profession" placeholder="请选择专业" style="width: 100%" @change="handleProfessionChange" @focus="loadProfessions">
+                <el-option 
+                  v-for="item in professionOptions" 
+                  :key="item.value" 
+                  :label="item.label" 
+                  :value="item.value" 
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="班级" prop="classRoom">
-              <el-input v-model="studentForm.classRoom" placeholder="请输入班级" maxlength="20" />
+              <el-select v-model="studentForm.classRoom" placeholder="请选择班级" style="width: 100%" @focus="loadClassRooms">
+                <el-option 
+                  v-for="item in classRoomOptions" 
+                  :key="item.value" 
+                  :label="item.label" 
+                  :value="item.value" 
+                />
+              </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -255,6 +269,12 @@ const teacherOptions = ref([])
 
 // 床位选项
 const bedOptions = ref([])
+
+// 专业选项
+const professionOptions = ref([])
+
+// 班级选项
+const classRoomOptions = ref([])
 
 // 对话框相关
 const dialogVisible = ref(false)
@@ -591,20 +611,130 @@ const handleCollegeChange = async (value) => {
   studentForm.teacherId = ''
   studentForm.teacherName = ''
   
-  // 如果选择了学院，加载该学院的辅导员
+  // 清空专业和班级
+  studentForm.profession = ''
+  studentForm.classRoom = ''
+  
+  // 清空专业和班级选项
+  professionOptions.value = []
+  classRoomOptions.value = []
+  
+  // 如果选择了学院，加载该学院的辅导员和专业
   if (value) {
     await loadTeachers(value)
+    await loadProfessions()
+  }
+}
+
+// 专业变更处理
+const handleProfessionChange = async () => {
+  // 清空班级
+  studentForm.classRoom = ''
+  classRoomOptions.value = []
+  
+  // 如果选择了专业，加载相应班级
+  if (studentForm.profession) {
+    await loadClassRooms()
+  }
+}
+
+// 加载专业列表
+const loadProfessions = async () => {
+  // 如果没有选择学院，不加载专业
+  if (!studentForm.college) {
+    professionOptions.value = []
+    return
+  }
+  
+  try {
+    const response = await request({
+      url: '/school/class/page',
+      method: 'post',
+      data: {
+        pageNum: 1,
+        pageSize: 999, // 加载全部
+        collegeName: studentForm.college
+      }
+    })
+    
+    const { code, data } = response.data
+    
+    if ((code === 0 || code === 1) && data?.records) {
+      // 获取不重复的专业列表
+      const uniqueProfessions = [...new Set(data.records.map(item => item.profession))]
+      
+      professionOptions.value = uniqueProfessions.map(prof => ({
+        label: prof,
+        value: prof
+      }))
+    } else {
+      professionOptions.value = []
+    }
+  } catch (error) {
+    console.error('获取专业列表失败:', error)
+    ElMessage.error('获取专业列表失败，请稍后重试')
+    professionOptions.value = []
+  }
+}
+
+// 加载班级列表
+const loadClassRooms = async () => {
+  // 如果没有选择学院或专业，不加载班级
+  if (!studentForm.college || !studentForm.profession) {
+    classRoomOptions.value = []
+    return
+  }
+  
+  try {
+    const response = await request({
+      url: '/school/class/page',
+      method: 'post',
+      data: {
+        pageNum: 1,
+        pageSize: 999, // 加载全部
+        collegeName: studentForm.college,
+        profession: studentForm.profession
+      }
+    })
+    
+    const { code, data } = response.data
+    
+    if ((code === 0 || code === 1) && data?.records) {
+      classRoomOptions.value = data.records.map(item => ({
+        label: item.className,
+        value: item.className
+      }))
+    } else {
+      classRoomOptions.value = []
+    }
+  } catch (error) {
+    console.error('获取班级列表失败:', error)
+    ElMessage.error('获取班级列表失败，请稍后重试')
+    classRoomOptions.value = []
   }
 }
 
 // 加载辅导员列表
 const loadTeachers = async (college) => {
   try {
-    const params = {}
+    const params = {
+      pageNum: 1,
+      pageSize: 100
+    }
     
     // 如果有传入学院或者表单中已选择学院，按学院筛选
     if (college) {
       params.college = typeof college === 'string' ? college : studentForm.college
+    }
+    
+    // 如果有选择专业，按专业筛选
+    if (studentForm.profession) {
+      params.profession = studentForm.profession
+    }
+    
+    // 如果有选择班级，按班级筛选
+    if (studentForm.classRoom) {
+      params.className = studentForm.classRoom
     }
     
     const response = await request({
@@ -615,12 +745,14 @@ const loadTeachers = async (college) => {
     
     const { code, data } = response.data
     
-    if ((code === 0 || code === 1) && data) {
-      teacherOptions.value = data.map(item => ({
-        label: item.name || item.teacherName,
+    if ((code === 0 || code === 1) && data?.records) {
+      teacherOptions.value = data.records.map(item => ({
+        label: `${item.name || item.teacherId} (${item.teacherId})`, // 显示姓名和ID，当name为null时使用ID
         value: item.teacherId,
         college: item.college,
-        teacherName: item.name || item.teacherName,
+        teacherName: item.name || item.teacherId, // 当name为null时，使用teacherId代替
+        profession: item.profession,
+        className: item.className,
         ...item
       }))
     } else {
@@ -647,6 +779,20 @@ const handleTeacherChange = (value) => {
     // 如果学院未选择或不匹配，回填学院
     if (!studentForm.college || studentForm.college !== selectedTeacher.college) {
       studentForm.college = selectedTeacher.college
+      // 学院变更后需要重新加载专业
+      loadProfessions()
+    }
+    
+    // 回填专业信息
+    if (selectedTeacher.profession) {
+      studentForm.profession = selectedTeacher.profession
+      // 专业变更后需要重新加载班级
+      loadClassRooms()
+    }
+    
+    // 回填班级信息
+    if (selectedTeacher.className) {
+      studentForm.classRoom = selectedTeacher.className
     }
   }
 }

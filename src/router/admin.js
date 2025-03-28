@@ -47,7 +47,7 @@ export const adminRoutes = {
         {
           path: 'teacher',
           name: 'TeacherManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/personnel/teacher/index.vue'),
           meta: { title: '教师管理' }
         },
         {
