@@ -59,9 +59,7 @@
           <el-table-column prop="college" label="所属学院" min-width="150" align="center" />
           <el-table-column label="分管班级" min-width="180" align="center">
             <template #default="scope">
-              <span v-if="scope.row.profession && scope.row.className">
-                {{ scope.row.profession }}{{ scope.row.className }}
-              </span>
+              <span v-if="scope.row.classes">{{ scope.row.classes }}</span>
               <span v-else>未分配</span>
             </template>
           </el-table-column>
@@ -232,7 +230,7 @@ const getList = async () => {
     
     const { code, msg, data } = response.data
     
-    if ((code === 0 || code === 1) && data) {
+    if (code === 0 && data) {
       teacherList.value = data.records || []
       total.value = data.total || 0
     } else {
