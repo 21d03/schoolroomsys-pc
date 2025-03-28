@@ -71,6 +71,14 @@
               <template v-else>
                 <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
                 <el-button type="success" link @click="handleAssignClass(scope.row)">分配班级</el-button>
+                <el-button 
+                  v-if="scope.row.classes" 
+                  type="warning" 
+                  link 
+                  @click="handleCancelClass(scope.row)"
+                >
+                  取消分配班级
+                </el-button>
                 <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
               </template>
             </template>
@@ -91,7 +99,7 @@
       </el-card>
     </div>
 
-    <!-- 添加/编辑教师对话框 -->
+    <!-- 添加教师对话框 -->
     <el-dialog 
       :title="dialogTitle" 
       v-model="dialogVisible" 
@@ -161,6 +169,185 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 编辑教师对话框 -->
+    <el-dialog 
+      title="编辑教师" 
+      v-model="editDialogVisible" 
+      width="600px" 
+      append-to-body 
+      destroy-on-close
+    >
+      <el-form 
+        ref="editFormRef" 
+        :model="editForm" 
+        :rules="editRules" 
+        label-width="100px"
+      >
+        <el-form-item label="工号" prop="teacherId">
+          <el-input v-model="editForm.teacherId" disabled class="is-disabled" />
+        </el-form-item>
+        <el-form-item label="姓名" prop="name">
+          <el-input v-model="editForm.name" disabled class="is-disabled" />
+        </el-form-item>
+        <el-form-item label="性别" prop="sex">
+          <el-input v-model="editForm.sex" disabled class="is-disabled" />
+        </el-form-item>
+        <el-form-item label="所属学院" prop="college">
+          <el-input v-model="editForm.college" disabled class="is-disabled" />
+        </el-form-item>
+        <el-form-item label="联系电话" prop="phone">
+          <el-input v-model="editForm.phone" placeholder="请输入联系电话" maxlength="11" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="editDialogVisible = false">取 消</el-button>
+          <el-button type="primary" @click="submitEditForm">确 定</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 分配班级对话框 -->
+    <el-dialog 
+      title="分配班级" 
+      v-model="assignClassDialogVisible" 
+      width="700px" 
+      append-to-body 
+      destroy-on-close
+    >
+      <div v-if="assignClassLoading" class="assign-loading">
+        <el-skeleton :rows="5" animated />
+      </div>
+      <div v-else>
+        <div class="teacher-info-box">
+          <div class="info-title">教师信息</div>
+          <div class="info-content">
+            <div class="info-item">
+              <span class="info-label">工号：</span>
+              <span class="info-value">{{ currentTeacher.teacherId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">姓名：</span>
+              <span class="info-value">{{ currentTeacher.name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">学院：</span>
+              <span class="info-value">{{ currentTeacher.college }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="current-classes-box">
+          <div class="info-title">当前负责班级</div>
+          <div v-if="!currentTeacher.classes" class="empty-tip">
+            暂未负责任何班级
+          </div>
+          <div v-else class="current-classes-list">
+            <el-tag 
+              v-for="classItem in currentTeacher.classes.split(',')" 
+              :key="classItem"
+              type="success"
+              class="class-tag"
+            >
+              {{ classItem }}
+            </el-tag>
+          </div>
+        </div>
+        
+        <div class="class-select-box">
+          <div class="info-title">可分配班级</div>
+          <div v-if="unassignedClasses.length === 0" class="empty-tip">
+            暂无未分配的班级
+          </div>
+          <div v-else class="class-list">
+            <el-checkbox-group v-model="selectedClasses">
+              <el-checkbox 
+                v-for="item in unassignedClasses" 
+                :key="`${item.profession}-${item.className}`"
+                :label="`${item.collegeId}#${item.profession}#${item.className}`"
+              >
+                {{ item.collegeName }} - {{ item.profession }}{{ item.className }}
+              </el-checkbox>
+            </el-checkbox-group>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="cancelAssignClass">取 消</el-button>
+          <el-button type="primary" @click="submitAssignClass" :disabled="selectedClasses.length === 0">确 定</el-button>
+        </div>
+      </template>
+    </el-dialog>
+
+    <!-- 取消分配班级对话框 -->
+    <el-dialog 
+      title="取消分配班级" 
+      v-model="cancelClassDialogVisible" 
+      width="700px" 
+      append-to-body 
+      destroy-on-close
+    >
+      <div v-if="cancelClassLoading" class="assign-loading">
+        <el-skeleton :rows="5" animated />
+      </div>
+      <div v-else>
+        <div class="teacher-info-box">
+          <div class="info-title">教师信息</div>
+          <div class="info-content">
+            <div class="info-item">
+              <span class="info-label">工号：</span>
+              <span class="info-value">{{ currentTeacher.teacherId }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">姓名：</span>
+              <span class="info-value">{{ currentTeacher.name }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">学院：</span>
+              <span class="info-value">{{ currentTeacher.college }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="current-classes-box">
+          <div class="info-title">当前负责班级</div>
+          <div v-if="!currentTeacher.classes" class="empty-tip">
+            暂未负责任何班级
+          </div>
+          <div v-else>
+            <div class="cancel-select-all">
+              <el-checkbox v-model="selectAllClasses" @change="handleSelectAllChange">全选</el-checkbox>
+            </div>
+            <div class="cancel-classes-list">
+              <el-checkbox-group v-model="selectedCancelClasses">
+                <el-checkbox 
+                  v-for="classItem in currentTeacher.classes.split(',')" 
+                  :key="classItem"
+                  :label="classItem"
+                  border
+                >
+                  {{ classItem }}
+                </el-checkbox>
+              </el-checkbox-group>
+            </div>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="cancelClassDialogVisible = false">取 消</el-button>
+          <el-button 
+            type="primary" 
+            @click="submitCancelClass" 
+            :disabled="selectedCancelClasses.length === 0"
+          >
+            确 定
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -187,7 +374,7 @@ const total = ref(0)
 // 学院选项
 const collegeOptions = ref([])
 
-// 对话框相关
+// 添加对话框相关
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增教师')
 const teacherFormRef = ref(null)
@@ -201,6 +388,31 @@ const teacherForm = reactive({
   college: '',
   isUsed: '1'  // 默认启用
 })
+
+// 编辑对话框相关
+const editDialogVisible = ref(false)
+const editFormRef = ref(null)
+const editForm = reactive({
+  teacherId: '',
+  name: '',
+  sex: '',
+  phone: '',
+  college: '',
+  isUsed: '1'
+})
+
+// 分配班级对话框相关
+const assignClassDialogVisible = ref(false)
+const assignClassLoading = ref(false)
+const unassignedClasses = ref([])
+const selectedClasses = ref([])
+const currentTeacher = ref({})
+
+// 取消分配班级对话框相关
+const cancelClassDialogVisible = ref(false)
+const cancelClassLoading = ref(false)
+const selectAllClasses = ref(false)
+const selectedCancelClasses = ref([])
 
 // 表单验证规则
 const teacherRules = {
@@ -223,6 +435,14 @@ const teacherRules = {
   ],
   isUsed: [
     { required: true, message: '请选择账号状态', trigger: 'change' }
+  ]
+}
+
+// 编辑表单验证规则
+const editRules = {
+  phone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号格式', trigger: 'blur' }
   ]
 }
 
@@ -322,17 +542,54 @@ const handleAdd = () => {
 
 // 编辑教师
 const handleEdit = (row) => {
-  dialogTitle.value = '编辑教师'
-  dialogVisible.value = true
-  resetForm()
+  editDialogVisible.value = true
   // 填充表单数据
-  Object.assign(teacherForm, row)
+  Object.assign(editForm, {
+    teacherId: row.teacherId,
+    name: row.name,
+    sex: row.sex,
+    phone: row.phone,
+    college: row.college,
+    isUsed: row.isUsed || '1'  // 默认启用
+  })
 }
 
 // 分配班级
-const handleAssignClass = (row) => {
-  ElMessage.info(`准备为教师 ${row.name} 分配班级，功能待实现`)
-  // 这里后续可以实现班级分配功能，如打开班级分配对话框等
+const handleAssignClass = async (row) => {
+  // 保存当前教师信息
+  currentTeacher.value = { ...row }
+  assignClassDialogVisible.value = true
+  assignClassLoading.value = true
+  selectedClasses.value = []
+  
+  try {
+    // 获取未分配辅导员的班级，按教师所属学院筛选
+    const response = await request({
+      url: '/school/class/unassigned',
+      method: 'get',
+      params: {
+        collegeName: row.college // 传入教师所属学院
+      }
+    })
+    
+    const { code, msg, data } = response.data
+    
+    if (code === 0) {
+      unassignedClasses.value = data || []
+      if (unassignedClasses.value.length === 0) {
+        ElMessage.warning(`${row.college}暂无可分配的班级`)
+      }
+    } else {
+      ElMessage.error(msg || '获取未分配班级失败')
+      unassignedClasses.value = []
+    }
+  } catch (error) {
+    console.error('获取未分配班级失败:', error)
+    ElMessage.error('获取未分配班级失败，请稍后重试')
+    unassignedClasses.value = []
+  } finally {
+    assignClassLoading.value = false
+  }
 }
 
 // 删除教师
@@ -354,6 +611,26 @@ const handleDelete = (row) => {
       message: '已取消删除'
     })
   })
+}
+
+// 取消分配班级
+const handleCancelClass = (row) => {
+  if (!row.classes) {
+    ElMessage.warning('该教师暂未分配班级')
+    return
+  }
+  
+  // 保存当前教师信息
+  currentTeacher.value = { ...row }
+  cancelClassDialogVisible.value = true
+  cancelClassLoading.value = true
+  selectedCancelClasses.value = []
+  selectAllClasses.value = false
+  
+  // 模拟加载过程
+  setTimeout(() => {
+    cancelClassLoading.value = false
+  }, 300)
 }
 
 // 重置表单
@@ -410,6 +687,45 @@ const submitForm = async () => {
   })
 }
 
+// 提交编辑表单
+const submitEditForm = async () => {
+  if (!editFormRef.value) return
+  
+  await editFormRef.value.validate(async (valid) => {
+    if (!valid) {
+      ElMessage.warning('请正确填写所有必填项')
+      return
+    }
+    
+    try {
+      const updateData = {
+        teacherId: editForm.teacherId,
+        phone: editForm.phone,
+        isUsed: "1" // 默认保持启用状态
+      }
+      
+      const response = await request({
+        url: '/school/teacher/manage/update',
+        method: 'put',
+        data: updateData
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success('编辑教师成功')
+        editDialogVisible.value = false
+        getList() // 刷新列表
+      } else {
+        ElMessage.error(msg || '编辑教师失败')
+      }
+    } catch (error) {
+      console.error('编辑教师失败:', error)
+      ElMessage.error('编辑教师失败，请稍后重试')
+    }
+  })
+}
+
 // 监听工号变化
 const handleTeacherIdChange = async () => {
   if (!teacherForm.teacherId) {
@@ -435,6 +751,154 @@ const handleTeacherIdChange = async () => {
     console.error('获取教师所属学院失败:', error)
     teacherForm.college = ''
     ElMessage.error('获取教师所属学院失败，请稍后重试')
+  }
+}
+
+// 取消分配班级
+const cancelAssignClass = () => {
+  assignClassDialogVisible.value = false
+  selectedClasses.value = []
+  unassignedClasses.value = []
+}
+
+// 提交分配班级
+const submitAssignClass = async () => {
+  if (selectedClasses.value.length === 0) {
+    ElMessage.warning('请至少选择一个班级')
+    return
+  }
+  
+  try {
+    // 准备批量分配班级的请求
+    const promises = selectedClasses.value.map(item => {
+      const [collegeId, profession, className] = item.split('#')
+      // 找到对应的班级对象，获取完整信息
+      const classObj = unassignedClasses.value.find(
+        c => c.collegeId === collegeId && 
+             c.profession === profession && 
+             c.className === className
+      )
+      
+      if (!classObj) {
+        return Promise.reject(new Error(`未找到班级信息: ${profession}${className}`))
+      }
+      
+      // 构造请求参数
+      const requestData = {
+        collegeName: classObj.collegeName,
+        profession: classObj.profession,
+        className: classObj.className,
+        teacherId: currentTeacher.value.teacherId,
+        teacherName: currentTeacher.value.name
+      }
+      
+      // 发送请求
+      return request({
+        url: '/school/class/assign',
+        method: 'post',
+        data: requestData
+      })
+    })
+    
+    // 等待所有请求完成
+    const results = await Promise.allSettled(promises)
+    
+    // 统计成功和失败的数量
+    const succeeded = results.filter(r => r.status === 'fulfilled' && r.value.data.code === 0).length
+    const failed = results.length - succeeded
+    
+    if (succeeded > 0) {
+      if (failed > 0) {
+        ElMessage.warning(`分配班级部分成功，成功 ${succeeded} 个，失败 ${failed} 个`)
+      } else {
+        ElMessage.success(`已为教师 ${currentTeacher.value.name} 分配 ${succeeded} 个班级`)
+      }
+      assignClassDialogVisible.value = false
+      getList() // 刷新列表
+    } else {
+      ElMessage.error('分配班级失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('分配班级失败:', error)
+    ElMessage.error('分配班级失败，请稍后重试')
+  }
+}
+
+// 处理全选
+const handleSelectAllChange = () => {
+  if (selectAllClasses.value) {
+    selectedCancelClasses.value = currentTeacher.value.classes.split(',')
+  } else {
+    selectedCancelClasses.value = []
+  }
+}
+
+// 提交取消班级
+const submitCancelClass = async () => {
+  if (selectedCancelClasses.value.length === 0) {
+    ElMessage.warning('请至少选择一个班级')
+    return
+  }
+  
+  try {
+    // 解析当前教师的班级字符串，提取班级信息
+    const parseClassInfo = (classString) => {
+      // 这里需要根据实际的班级字符串格式进行解析
+      // 假设格式为 "软件工程21-1"，需要拆分为专业和班级
+      const match = classString.match(/^(.*?)(\d+-\d+)$/)
+      if (match) {
+        return {
+          profession: match[1],  // 专业名称，如"软件工程"
+          className: match[2]    // 班级名称，如"21-1"
+        }
+      }
+      return null
+    }
+    
+    // 准备批量取消班级的请求
+    const promises = selectedCancelClasses.value.map(classString => {
+      const classInfo = parseClassInfo(classString)
+      
+      if (!classInfo) {
+        return Promise.reject(new Error(`无法解析班级信息: ${classString}`))
+      }
+      
+      // 构造请求参数
+      const requestData = {
+        collegeName: currentTeacher.value.college,
+        profession: classInfo.profession,
+        className: classInfo.className
+      }
+      
+      // 发送请求
+      return request({
+        url: '/school/class/unassign',
+        method: 'post',
+        data: requestData
+      })
+    })
+    
+    // 等待所有请求完成
+    const results = await Promise.allSettled(promises)
+    
+    // 统计成功和失败的数量
+    const succeeded = results.filter(r => r.status === 'fulfilled' && r.value.data.code === 0).length
+    const failed = results.length - succeeded
+    
+    if (succeeded > 0) {
+      if (failed > 0) {
+        ElMessage.warning(`取消班级分配部分成功，成功 ${succeeded} 个，失败 ${failed} 个`)
+      } else {
+        ElMessage.success(`已取消教师 ${currentTeacher.value.name} 的 ${succeeded} 个班级分配`)
+      }
+      cancelClassDialogVisible.value = false
+      getList() // 刷新列表
+    } else {
+      ElMessage.error('取消班级分配失败，请稍后重试')
+    }
+  } catch (error) {
+    console.error('取消班级分配失败:', error)
+    ElMessage.error('取消班级分配失败，请稍后重试')
   }
 }
 
@@ -475,5 +939,130 @@ onMounted(() => {
     display: flex;
     justify-content: flex-end;
   }
+}
+
+// 分配班级样式
+.assign-loading {
+  padding: 20px 0;
+}
+
+.teacher-info-box {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #ebeef5;
+  
+  .info-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #303133;
+  }
+  
+  .info-content {
+    display: flex;
+    flex-wrap: wrap;
+    
+    .info-item {
+      width: 50%;
+      margin-bottom: 8px;
+      
+      .info-label {
+        color: #606266;
+        margin-right: 8px;
+      }
+      
+      .info-value {
+        color: #303133;
+        font-weight: 500;
+      }
+    }
+  }
+}
+
+.current-classes-box {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed #ebeef5;
+  
+  .info-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: #303133;
+  }
+  
+  .empty-tip {
+    color: #909399;
+    text-align: center;
+    padding: 30px 0;
+  }
+  
+  .current-classes-list {
+    display: flex;
+    flex-wrap: wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+    
+    .class-tag {
+      margin-right: 8px;
+      margin-bottom: 8px;
+    }
+  }
+}
+
+.class-select-box {
+  .info-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #303133;
+  }
+  
+  .empty-tip {
+    color: #909399;
+    text-align: center;
+    padding: 30px 0;
+  }
+  
+  .class-list {
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+    
+    .el-checkbox-group {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-gap: 12px;
+      
+      @media screen and (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+    }
+  }
+}
+
+.cancel-select-all {
+  margin-bottom: 12px;
+}
+
+.cancel-classes-list {
+  display: flex;
+  flex-wrap: wrap;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 10px;
+  
+  .el-checkbox {
+    margin-right: 12px;
+    margin-bottom: 10px;
+  }
+}
+
+:deep(.is-disabled) {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #909399;
+  cursor: not-allowed;
 }
 </style> 
