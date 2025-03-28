@@ -160,33 +160,37 @@ const handleLogin = async () => {
         console.log('登录响应：', res)
         
         // 存储用户信息和token
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('userInfo', JSON.stringify(res.data))
+        const responseData = res.data
+        localStorage.setItem('token', responseData.data.token)
+        localStorage.setItem('userInfo', JSON.stringify(responseData.data))
         
         console.log('用户信息已存储，准备跳转')
         ElMessage.success('登录成功')
         
         // 根据用户类型跳转到不同页面
-        const userType = res.data.userType
+        const userType = responseData.data.userType
         console.log('用户类型：', userType)
         
-        switch (userType) {
-          case '1':
-            console.log('跳转到管理员页面')
-            router.push('/admin')
-            break
-          case '2':
-            console.log('跳转到教师页面')
-            router.push('/teacher')
-            break
-          case '3':
-            console.log('跳转到学生页面')
-            router.push('/student')
-            break
-          default:
-            console.log('未知用户类型，返回登录页')
-            router.push('/login')
-        }
+        // 强制刷新页面以便重新加载路由
+        setTimeout(() => {
+          switch (userType) {
+            case '1':
+              console.log('跳转到管理员页面')
+              window.location.href = '/admin/dashboard'
+              break
+            case '2':
+              console.log('跳转到教师页面')
+              window.location.href = '/teacher'
+              break
+            case '3':
+              console.log('跳转到学生页面')
+              window.location.href = '/student'
+              break
+            default:
+              console.log('未知用户类型，返回登录页')
+              router.push('/login')
+          }
+        }, 100)
       } catch (error) {
         console.error('登录失败:', error)
         ElMessage.error(error.response?.data?.msg || '登录失败，请稍后重试')

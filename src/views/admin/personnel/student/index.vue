@@ -70,8 +70,7 @@
           </el-table-column>
           <el-table-column label="操作" min-width="160" align="center" fixed="right">
             <template #default="scope">
-              <el-button type="primary" link @click="handleView(scope.row)">查看</el-button>
-              <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
+              <!-- <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button> -->
               <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
             </template>
           </el-table-column>
@@ -523,15 +522,45 @@ const handleView = (row) => {
 // 删除学生
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定要删除学生 ${row.stuName} 吗？删除后无法恢复，请谨慎操作。`,
+    `确定要删除学生 ${row.stuName} 吗？删除后将同时删除该学生的所有相关信息，包括基本信息、用户账号、宿舍信息、请假记录和报修记录，且不可恢复，请谨慎操作。`,
     '警告',
     {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    ElMessage.info(`删除学生 ${row.stuName} 功能待实现`)
+  ).then(async () => {
+    try {
+      const response = await request({
+        url: `/school/student/${row.stuId}`,
+        method: 'delete'
+      })
+      
+      const { code, msg, data } = response.data
+      
+      if ((code === 0 || code === 1) && data === true) {
+        ElMessage.success('删除学生成功')
+        getList() // 刷新学生列表
+      } else {
+        ElMessage.error(msg || '删除学生失败')
+      }
+    } catch (error) {
+      console.error('删除学生失败:', error)
+      if (error.response) {
+        const status = error.response.status
+        if (status === 401) {
+          ElMessage.error('登录已过期，请重新登录')
+        } else if (status === 403) {
+          ElMessage.error('权限不足，无法执行删除操作')
+        } else if (status === 404) {
+          ElMessage.error('学生不存在或已被删除')
+        } else {
+          ElMessage.error(error.response.data?.msg || '删除学生失败')
+        }
+      } else {
+        ElMessage.error('网络错误，请稍后重试')
+      }
+    }
   }).catch(() => {
     ElMessage({
       type: 'info',

@@ -125,7 +125,6 @@
 import { ref, computed, onMounted } from 'vue'
 import request from '@/utils/request'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'  // 导入axios
 
 // 获取用户信息
 const userInfo = ref(JSON.parse(localStorage.getItem('userInfo') || '{}'))
@@ -152,11 +151,17 @@ const fetchStatsData = async () => {
     })
     console.log('统计数据响应：', res)
     
-    if (res.data) {
-      statsData.value = res.data
+    const { code, data } = res.data
+    
+    if ((code === 0 || code === 1) && data) {
+      statsData.value = data
+      console.log('统计数据已更新：', statsData.value)
+    } else {
+      console.error('获取统计数据失败：响应格式不正确', res.data)
     }
   } catch (error) {
     console.error('获取统计数据失败：', error)
+    ElMessage.error('获取统计数据失败，请刷新页面重试')
   }
 }
 
@@ -166,18 +171,18 @@ const recentApprovals = ref([])
 // 获取最近审批数据
 const fetchRecentApprovals = async () => {
   try {
-    // 直接使用axios发请求
-    const res = await axios.get('http://localhost:8080/SchoolRoomSys/school/approval/recent', {
-      headers: {
-        'token': localStorage.getItem('token')
-      }
+    const res = await request({
+      url: '/school/approval/recent',
+      method: 'get'
     })
     
     console.log('最近审批响应：', res.data)
     
-    if (res.data.code === 1 && Array.isArray(res.data.data)) {
+    const { code, data } = res.data
+    
+    if ((code === 0 || code === 1) && Array.isArray(data)) {
       // 处理审批数据
-      recentApprovals.value = res.data.data.map(item => ({
+      recentApprovals.value = data.map(item => ({
         id: item.approvalId,
         type: item.approvalType === '1' ? '请假申请' : '维修申请',
         applicant: `${item.studentName}(${item.studentId})`,
@@ -186,9 +191,12 @@ const fetchRecentApprovals = async () => {
         statusType: getStatusType(item.status),
         createTime: formatDateTime(item.createTime)
       }))
+    } else {
+      console.error('获取最近审批数据失败：响应格式不正确', res.data)
     }
   } catch (error) {
     console.error('获取最近审批数据失败：', error)
+    ElMessage.error('获取最近审批数据失败，请刷新页面重试')
   }
 }
 
