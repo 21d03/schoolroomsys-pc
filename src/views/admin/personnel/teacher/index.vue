@@ -65,9 +65,14 @@
           </el-table-column>
           <el-table-column label="操作" min-width="240" align="center" fixed="right">
             <template #default="scope">
-              <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
-              <el-button type="success" link @click="handleAssignClass(scope.row)">分配班级</el-button>
-              <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+              <template v-if="scope.row.teacherId && scope.row.teacherId.startsWith('00')">
+                <span style="color: #909399;">学校管理员，不可操作</span>
+              </template>
+              <template v-else>
+                <el-button type="primary" link @click="handleEdit(scope.row)">编辑</el-button>
+                <el-button type="success" link @click="handleAssignClass(scope.row)">分配班级</el-button>
+                <el-button type="danger" link @click="handleDelete(scope.row)">删除</el-button>
+              </template>
             </template>
           </el-table-column>
         </el-table>
@@ -103,7 +108,12 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="工号" prop="teacherId">
-              <el-input v-model="teacherForm.teacherId" placeholder="请输入工号" maxlength="20" />
+              <el-input 
+                v-model="teacherForm.teacherId" 
+                placeholder="请输入工号" 
+                maxlength="20"
+                @blur="handleTeacherIdChange"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -126,20 +136,18 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="所属学院" prop="college">
-              <el-select v-model="teacherForm.college" placeholder="请选择学院" style="width: 100%">
-                <el-option 
-                  v-for="item in collegeOptions" 
-                  :key="item.value" 
-                  :label="item.label" 
-                  :value="item.value" 
-                />
-              </el-select>
+              <el-input 
+                v-model="teacherForm.college" 
+                placeholder="请先输入工号" 
+                readonly 
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="账号状态" prop="status">
-              <el-select v-model="teacherForm.status" placeholder="请选择状态" style="width: 100%">
-                <el-option label="正常" value="1" />
+            <el-form-item label="账号状态" prop="isUsed">
+              <el-select v-model="teacherForm.isUsed" placeholder="请选择状态" style="width: 100%">
+                <el-option label="启用" value="1" />
                 <el-option label="禁用" value="0" />
               </el-select>
             </el-form-item>
@@ -191,7 +199,7 @@ const teacherForm = reactive({
   sex: '',
   phone: '',
   college: '',
-  status: '1'
+  isUsed: '1'  // 默认启用
 })
 
 // 表单验证规则
@@ -213,7 +221,7 @@ const teacherRules = {
   college: [
     { required: true, message: '请选择所属学院', trigger: 'change' }
   ],
-  status: [
+  isUsed: [
     { required: true, message: '请选择账号状态', trigger: 'change' }
   ]
 }
@@ -356,7 +364,7 @@ const resetForm = () => {
     sex: '',
     phone: '',
     college: '',
-    status: '1'
+    isUsed: '1'
   })
   
   // 如果表单引用存在，重置校验状态
@@ -380,17 +388,54 @@ const submitForm = async () => {
     }
     
     try {
-      // 模拟提交成功
-      setTimeout(() => {
-        ElMessage.success(dialogTitle.value === '新增教师' ? '新增教师成功' : '编辑教师成功')
+      const response = await request({
+        url: '/school/teacher/manage/add',
+        method: 'post',
+        data: teacherForm
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success('新增教师成功')
         dialogVisible.value = false
         getList() // 刷新列表
-      }, 500)
+      } else {
+        ElMessage.error(msg || '新增教师失败')
+      }
     } catch (error) {
-      console.error(dialogTitle.value === '新增教师' ? '新增教师失败:' : '编辑教师失败:', error)
-      ElMessage.error(dialogTitle.value === '新增教师' ? '新增教师失败' : '编辑教师失败')
+      console.error('新增教师失败:', error)
+      ElMessage.error('新增教师失败，请稍后重试')
     }
   })
+}
+
+// 监听工号变化
+const handleTeacherIdChange = async () => {
+  if (!teacherForm.teacherId) {
+    teacherForm.college = ''
+    return
+  }
+  
+  try {
+    const response = await request({
+      url: `/school/teacher/manage/college/${teacherForm.teacherId}`,
+      method: 'get'
+    })
+    
+    const { code, msg, data } = response.data
+    
+    if (code === 0 && data) {
+      teacherForm.college = data
+    } else {
+      teacherForm.college = ''
+      ElMessage.warning(msg || '未找到该工号对应的学院信息')
+    }
+  } catch (error) {
+    console.error('获取教师所属学院失败:', error)
+    teacherForm.college = ''
+    ElMessage.error('获取教师所属学院失败，请稍后重试')
+  }
 }
 
 // 页面加载时获取数据
