@@ -8,8 +8,8 @@
             <el-form-item label="工号" prop="teacherId">
               <el-input v-model="queryParams.teacherId" placeholder="请输入工号" clearable />
             </el-form-item>
-            <el-form-item label="姓名" prop="teacherName">
-              <el-input v-model="queryParams.teacherName" placeholder="请输入姓名" clearable />
+            <el-form-item label="姓名" prop="name">
+              <el-input v-model="queryParams.name" placeholder="请输入姓名" clearable />
             </el-form-item>
             <el-form-item label="所属学院" prop="college">
               <el-select v-model="queryParams.college" placeholder="请选择学院" clearable style="width: 180px">
@@ -53,13 +53,16 @@
           style="width: 100%"
         >
           <el-table-column prop="teacherId" label="工号" min-width="120" align="center" />
-          <el-table-column prop="teacherName" label="姓名" min-width="100" align="center" />
+          <el-table-column prop="name" label="姓名" min-width="100" align="center" />
           <el-table-column prop="sex" label="性别" width="80" align="center" />
           <el-table-column prop="phone" label="联系电话" min-width="120" align="center" />
           <el-table-column prop="college" label="所属学院" min-width="150" align="center" />
-          <el-table-column prop="classes" label="分管班级" min-width="180" align="center">
+          <el-table-column label="分管班级" min-width="180" align="center">
             <template #default="scope">
-              <span>{{ scope.row.classes || '未分配' }}</span>
+              <span v-if="scope.row.profession && scope.row.className">
+                {{ scope.row.profession }}{{ scope.row.className }}
+              </span>
+              <span v-else>未分配</span>
             </template>
           </el-table-column>
           <el-table-column label="操作" min-width="240" align="center" fixed="right">
@@ -106,8 +109,8 @@
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="姓名" prop="teacherName">
-              <el-input v-model="teacherForm.teacherName" placeholder="请输入姓名" maxlength="20" />
+            <el-form-item label="姓名" prop="name">
+              <el-input v-model="teacherForm.name" placeholder="请输入姓名" maxlength="20" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -165,7 +168,7 @@ const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
   teacherId: '',
-  teacherName: '',
+  name: '',
   college: '',
   sex: ''
 })
@@ -186,7 +189,7 @@ const teacherFormRef = ref(null)
 // 教师表单数据
 const teacherForm = reactive({
   teacherId: '',
-  teacherName: '',
+  name: '',
   sex: '',
   phone: '',
   college: '',
@@ -199,7 +202,7 @@ const teacherRules = {
     { required: true, message: '请输入工号', trigger: 'blur' },
     { pattern: /^\d{4,15}$/, message: '工号必须为4-15位数字', trigger: 'blur' }
   ],
-  teacherName: [
+  name: [
     { required: true, message: '请输入姓名', trigger: 'blur' }
   ],
   sex: [
@@ -221,43 +224,28 @@ const teacherRules = {
 const getList = async () => {
   loading.value = true
   try {
-    // 使用模拟数据，后续替换为实际API调用
-    setTimeout(() => {
-      teacherList.value = [
-        {
-          teacherId: '0500001',
-          teacherName: '张老师',
-          sex: '男',
-          phone: '13800138000',
-          college: '信息技术学院',
-          classes: '软件工程2101,软件工程2102',
-          status: '1'
-        },
-        {
-          teacherId: '0500002',
-          teacherName: '李老师',
-          sex: '女',
-          phone: '13800138001',
-          college: '信息技术学院',
-          classes: '计算机科学2101',
-          status: '1'
-        },
-        {
-          teacherId: '0600001',
-          teacherName: '王老师',
-          sex: '男',
-          phone: '13800138002',
-          college: '机械工程学院',
-          classes: null,
-          status: '1'
-        }
-      ]
-      total.value = 3
-      loading.value = false
-    }, 500)
+    const response = await request({
+      url: '/school/teacher/manage/page',
+      method: 'post',
+      data: queryParams
+    })
+    
+    const { code, msg, data } = response.data
+    
+    if ((code === 0 || code === 1) && data) {
+      teacherList.value = data.records || []
+      total.value = data.total || 0
+    } else {
+      ElMessage.error(msg || '获取教师列表失败')
+      teacherList.value = []
+      total.value = 0
+    }
   } catch (error) {
     console.error('获取教师列表失败:', error)
-    ElMessage.error('获取教师列表失败')
+    ElMessage.error('获取教师列表失败，请稍后重试')
+    teacherList.value = []
+    total.value = 0
+  } finally {
     loading.value = false
   }
 }
@@ -278,25 +266,13 @@ const getCollegeList = async () => {
         value: item.collegeName
       }))
     } else {
-      // 使用模拟数据，后续可以删除
-      collegeOptions.value = [
-        { label: '信息技术学院', value: '信息技术学院' },
-        { label: '机械工程学院', value: '机械工程学院' },
-        { label: '电气工程学院', value: '电气工程学院' },
-        { label: '经济管理学院', value: '经济管理学院' },
-        { label: '艺术设计学院', value: '艺术设计学院' }
-      ]
+      ElMessage.error(msg || '获取学院列表失败')
+      collegeOptions.value = []
     }
   } catch (error) {
     console.error('获取学院列表失败:', error)
-    // 使用模拟数据，后续可以删除
-    collegeOptions.value = [
-      { label: '信息技术学院', value: '信息技术学院' },
-      { label: '机械工程学院', value: '机械工程学院' },
-      { label: '电气工程学院', value: '电气工程学院' },
-      { label: '经济管理学院', value: '经济管理学院' },
-      { label: '艺术设计学院', value: '艺术设计学院' }
-    ]
+    ElMessage.error('获取学院列表失败，请稍后重试')
+    collegeOptions.value = []
   }
 }
 
@@ -310,7 +286,7 @@ const handleQuery = () => {
 const resetQuery = () => {
   Object.assign(queryParams, {
     teacherId: '',
-    teacherName: '',
+    name: '',
     college: '',
     sex: '',
     pageNum: 1,
@@ -349,14 +325,14 @@ const handleEdit = (row) => {
 
 // 分配班级
 const handleAssignClass = (row) => {
-  ElMessage.info(`准备为教师 ${row.teacherName} 分配班级，功能待实现`)
+  ElMessage.info(`准备为教师 ${row.name} 分配班级，功能待实现`)
   // 这里后续可以实现班级分配功能，如打开班级分配对话框等
 }
 
 // 删除教师
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定要删除教师 ${row.teacherName} 吗？删除后将不可恢复，请谨慎操作。`,
+    `确定要删除教师 ${row.name} 吗？删除后将不可恢复，请谨慎操作。`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -364,7 +340,7 @@ const handleDelete = (row) => {
       type: 'warning'
     }
   ).then(() => {
-    ElMessage.success(`已删除教师 ${row.teacherName}`)
+    ElMessage.success(`已删除教师 ${row.name}`)
     getList() // 刷新列表
   }).catch(() => {
     ElMessage({
@@ -378,7 +354,7 @@ const handleDelete = (row) => {
 const resetForm = () => {
   Object.assign(teacherForm, {
     teacherId: '',
-    teacherName: '',
+    name: '',
     sex: '',
     phone: '',
     college: '',
