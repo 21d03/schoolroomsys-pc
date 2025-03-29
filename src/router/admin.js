@@ -53,7 +53,7 @@ export const adminRoutes = {
         {
           path: 'dorm-manager',
           name: 'DormManagerManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/personnel/dorm-manager/index.vue'),
           meta: { title: '宿管管理' }
         },
         {

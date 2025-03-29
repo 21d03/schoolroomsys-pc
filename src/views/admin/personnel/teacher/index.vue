@@ -602,9 +602,25 @@ const handleDelete = (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    ElMessage.success(`已删除教师 ${row.name}`)
-    getList() // 刷新列表
+  ).then(async () => {
+    try {
+      const response = await request({
+        url: `/school/teacher/manage/${row.teacherId}`,
+        method: 'delete'
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success(`已删除教师 ${row.name}`)
+        getList() // 刷新列表
+      } else {
+        ElMessage.error(msg || '删除教师失败')
+      }
+    } catch (error) {
+      console.error('删除教师失败:', error)
+      ElMessage.error('删除教师失败，请稍后重试')
+    }
   }).catch(() => {
     ElMessage({
       type: 'info',

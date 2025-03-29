@@ -291,7 +291,7 @@ const fetchDormManagers = async () => {
       }
     })
 
-    if (response.data.code === 1) {
+    if ((response.data.code === 1 || response.data.code === 0)) {
       // 将后端返回的宿管数据转换为选项格式
       managerOptions.value = response.data.data.map(item => ({
         value: item.hmId,
