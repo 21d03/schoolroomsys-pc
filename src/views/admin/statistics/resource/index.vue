@@ -583,25 +583,27 @@ const renderGenderRatioChart = (data) => {
       {
         name: '性别比例',
         type: 'pie',
-        radius: ['30%', '65%'],
-        center: ['60%', '50%'],
-        avoidLabelOverlap: false,
+        radius: ['20%', '50%'],
+        center: ['55%', '50%'],
+        avoidLabelOverlap: true,
         itemStyle: {
-          borderRadius: 10,
+          borderRadius: 8,
           borderColor: '#fff',
           borderWidth: 2
         },
         label: {
           show: true,
-          formatter: '{b}: {c} ({d}%)',
-          fontSize: 14,
-          fontWeight: 'bold',
-          position: 'outside'
+          formatter: '{b}: {c}',
+          fontSize: 12,
+          fontWeight: 'normal',
+          position: 'outside',
+          distanceToLabelLine: 5,
+          padding: [2, 4]
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: 'bold'
           },
           itemStyle: {
@@ -611,8 +613,9 @@ const renderGenderRatioChart = (data) => {
         },
         labelLine: {
           show: true,
-          length: 20,
-          length2: 15
+          length: 15,
+          length2: 20,
+          smooth: true
         },
         data: [
           { 
@@ -624,11 +627,6 @@ const renderGenderRatioChart = (data) => {
             value: data.femaleCount, 
             name: '女生宿舍',
             itemStyle: { color: '#ee6666' }
-          },
-          { 
-            value: data.mixedCount, 
-            name: '混合宿舍',
-            itemStyle: { color: '#91cc75' }
           }
         ]
       }
