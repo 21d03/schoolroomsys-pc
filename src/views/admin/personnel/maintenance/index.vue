@@ -159,8 +159,8 @@
           <el-col :span="12" v-if="dialogTitle === '编辑维修人员'">
             <el-form-item label="状态" prop="isUsed">
               <el-select v-model="workerForm.isUsed" placeholder="请选择状态" style="width: 100%">
-                <el-option label="在职" value="1" />
-                <el-option label="离职" value="0" />
+                <el-option label="启用" value="1" />
+                <el-option label="禁用" value="0" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -370,7 +370,7 @@ const cancelForm = () => {
   resetForm()
 }
 
-// 提交表单 (这里使用模拟数据，后续将替换为实际API)
+// 提交表单
 const submitForm = async () => {
   if (!workerFormRef.value) return
   
@@ -380,12 +380,42 @@ const submitForm = async () => {
       return
     }
     
-    // 模拟API调用
-    setTimeout(() => {
-      ElMessage.success(dialogTitle.value === '新增维修人员' ? '新增维修人员成功' : '编辑维修人员成功')
-      dialogVisible.value = false
-      getList() // 刷新列表
-    }, 500)
+    try {
+      // 准备提交的数据
+      const submitData = {
+        rpId: workerForm.rpId,
+        rpName: workerForm.rpName,
+        rpSex: workerForm.rpSex,
+        rpPhone: workerForm.rpPhone,
+        campus: workerForm.campus,
+        isUsed: '1' // 新增时始终使用启用状态
+      }
+      
+      const url = dialogTitle.value === '新增维修人员' 
+        ? '/school/repair/people/add' 
+        : '/school/repair/people/update' // 后续接口待定
+      
+      const method = dialogTitle.value === '新增维修人员' ? 'post' : 'put'
+      
+      const response = await request({
+        url,
+        method,
+        data: submitData
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success(dialogTitle.value === '新增维修人员' ? '新增维修人员成功' : '编辑维修人员成功')
+        dialogVisible.value = false
+        getList() // 刷新列表
+      } else {
+        ElMessage.error(msg || (dialogTitle.value === '新增维修人员' ? '新增维修人员失败' : '编辑维修人员失败'))
+      }
+    } catch (error) {
+      console.error(dialogTitle.value === '新增维修人员' ? '新增维修人员失败:' : '编辑维修人员失败:', error)
+      ElMessage.error(dialogTitle.value === '新增维修人员' ? '新增维修人员失败，请稍后重试' : '编辑维修人员失败，请稍后重试')
+    }
   })
 }
 
