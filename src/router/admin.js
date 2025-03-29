@@ -67,8 +67,28 @@ export const adminRoutes = {
     {
       path: 'approval',
       name: 'ApprovalManagement',
-      component: UnderDevelopment,
-      meta: { title: '审批管理' }
+      redirect: '/admin/approval/overview',
+      meta: { title: '审批管理' },
+      children: [
+        {
+          path: 'overview',
+          name: 'ApprovalOverview',
+          component: () => import('@/views/admin/approval/overview/index.vue'),
+          meta: { title: '审批概览' }
+        },
+        {
+          path: 'leave',
+          name: 'LeaveApproval',
+          component: () => import('@/views/admin/approval/leave/index.vue'),
+          meta: { title: '请假审批' }
+        },
+        {
+          path: 'repair',
+          name: 'RepairApproval',
+          component: () => import('@/views/admin/approval/repair/index.vue'),
+          meta: { title: '报修审批' }
+        }
+      ]
     },
     {
       path: 'statistics',
