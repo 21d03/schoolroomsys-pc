@@ -99,7 +99,7 @@ export const adminRoutes = {
         {
           path: 'resource',
           name: 'ResourceAnalysis',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/statistics/resource/index.vue'),
           meta: { title: '宿舍资源分析' }
         },
         {
