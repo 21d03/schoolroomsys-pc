@@ -382,20 +382,30 @@ const submitForm = async () => {
     
     try {
       // 准备提交的数据
-      const submitData = {
-        rpId: workerForm.rpId,
-        rpName: workerForm.rpName,
-        rpSex: workerForm.rpSex,
-        rpPhone: workerForm.rpPhone,
-        campus: workerForm.campus,
-        isUsed: '1' // 新增时始终使用启用状态
+      let submitData;
+      let url;
+      const method = dialogTitle.value === '新增维修人员' ? 'post' : 'put';
+      
+      if (dialogTitle.value === '新增维修人员') {
+        // 新增维修人员
+        submitData = {
+          rpId: workerForm.rpId,
+          rpName: workerForm.rpName,
+          rpSex: workerForm.rpSex,
+          rpPhone: workerForm.rpPhone,
+          campus: workerForm.campus,
+          isUsed: '1' // 新增时始终使用启用状态
+        };
+        url = '/school/repair/people/add';
+      } else {
+        // 编辑维修人员，只传递允许修改的字段
+        submitData = {
+          rpId: workerForm.rpId,
+          rpPhone: workerForm.rpPhone,
+          isUsed: workerForm.isUsed
+        };
+        url = '/school/repair/people/update';
       }
-      
-      const url = dialogTitle.value === '新增维修人员' 
-        ? '/school/repair/people/add' 
-        : '/school/repair/people/update' // 后续接口待定
-      
-      const method = dialogTitle.value === '新增维修人员' ? 'post' : 'put'
       
       const response = await request({
         url,
