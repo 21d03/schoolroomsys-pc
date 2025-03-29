@@ -339,8 +339,24 @@ const handleDelete = (row) => {
       type: 'warning'
     }
   ).then(async () => {
-    ElMessage.success(`已删除维修人员 ${row.rpName}`)
-    getList() // 刷新列表
+    try {
+      const response = await request({
+        url: `/school/repair/people/${row.rpId}`,
+        method: 'delete'
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success(`已删除维修人员 ${row.rpName}`)
+        getList() // 刷新列表
+      } else {
+        ElMessage.error(msg || '删除失败')
+      }
+    } catch (error) {
+      console.error('删除维修人员失败:', error)
+      ElMessage.error('删除维修人员失败，请稍后重试')
+    }
   }).catch(() => {
     ElMessage({
       type: 'info',
