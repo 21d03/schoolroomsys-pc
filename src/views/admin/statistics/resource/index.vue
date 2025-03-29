@@ -177,8 +177,8 @@ const getResourceOverview = async () => {
 const getRoomDistribution = async () => {
   loadingRoomDistribution.value = true
   try {
-    const res = await request.get('/school/dormitory/resource/room-distribution')
-    const { code, msg, data } = res
+    const res = await request.get('/school/dorm/building/room-distribution')
+    const { code, msg, data } = res.data
     if (code === 0) {
       renderRoomDistributionChart(data)
     } else {
@@ -196,8 +196,8 @@ const getRoomDistribution = async () => {
 const getUsageRate = async () => {
   loadingUsageRate.value = true
   try {
-    const res = await request.get('/school/dormitory/resource/usage-rate')
-    const { code, msg, data } = res
+    const res = await request.get('/school/dorm/building/usage-rate')
+    const { code, msg, data } = res.data
     if (code === 0) {
       renderUsageRateChart(data)
     } else {
@@ -260,60 +260,120 @@ const renderRoomDistributionChart = (data) => {
       trigger: 'axis',
       axisPointer: {
         type: 'shadow'
+      },
+      formatter: function(params) {
+        // 构建自定义提示框内容
+        let res = `<div style="font-weight:bold;margin-bottom:5px;">${params[0].name}</div>`
+        params.forEach(param => {
+          const colorSpan = `<span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${param.color};"></span>`
+          res += `${colorSpan} ${param.seriesName}: ${param.value}<br/>`
+        })
+        return res
       }
     },
     legend: {
-      data: ['总房间数', '已使用', '空闲', '维修中']
+      data: ['总房间数', '已使用', '空闲', '维修中'],
+      textStyle: {
+        fontSize: 12
+      },
+      itemWidth: 15,
+      itemHeight: 10,
+      bottom: 0
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
+      top: '8%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
-      data: data.map(item => item.buildingName)
+      data: data.map(item => item.buildingName),
+      axisLabel: {
+        interval: 0,
+        rotate: data.length > 5 ? 30 : 0, // 如果宿舍楼数量超过5个，旋转标签以防重叠
+        fontSize: 12
+      },
+      axisTick: {
+        alignWithLabel: true
+      }
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      name: '房间数量',
+      nameTextStyle: {
+        padding: [0, 0, 0, 30]
+      },
+      splitLine: {
+        lineStyle: {
+          type: 'dashed'
+        }
+      }
     },
     series: [
       {
         name: '总房间数',
         type: 'bar',
-        stack: 'total',
-        emphasis: {
-          focus: 'series'
+        barWidth: data.length > 5 ? '40%' : '60%', // 根据数据量调整柱宽
+        itemStyle: {
+          color: '#91cc75',
+          borderRadius: [4, 4, 0, 0]
         },
-        data: data.map(item => item.totalRooms)
+        emphasis: {
+          focus: 'series',
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0,0,0,0.2)'
+          }
+        },
+        data: data.map(item => item.totalRooms),
+        label: {
+          show: true,
+          position: 'top',
+          fontSize: 12
+        },
+        z: 1
       },
       {
         name: '已使用',
         type: 'bar',
         stack: 'usage',
+        itemStyle: {
+          color: '#5470c6'
+        },
         emphasis: {
           focus: 'series'
         },
-        data: data.map(item => item.usedRooms)
+        data: data.map(item => item.usedRooms),
+        z: 2
       },
       {
         name: '空闲',
         type: 'bar',
         stack: 'usage',
+        itemStyle: {
+          color: '#91cc75'
+        },
         emphasis: {
           focus: 'series'
         },
-        data: data.map(item => item.availableRooms)
+        data: data.map(item => item.availableRooms),
+        z: 2
       },
       {
         name: '维修中',
         type: 'bar',
         stack: 'usage',
+        itemStyle: {
+          color: '#ee6666',
+          borderRadius: [4, 4, 0, 0]
+        },
         emphasis: {
           focus: 'series'
         },
-        data: data.map(item => item.underMaintenanceRooms)
+        data: data.map(item => item.underMaintenanceRooms),
+        z: 2
       }
     ]
   }
@@ -330,29 +390,53 @@ const renderUsageRateChart = (data) => {
   const option = {
     tooltip: {
       trigger: 'axis',
-      formatter: '{b}: {c}%'
+      formatter: '{b}: {c}%',
+      axisPointer: {
+        type: 'shadow'
+      }
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '10%',
+      top: '8%',
       containLabel: true
     },
     xAxis: {
       type: 'category',
-      data: data.map(item => item.buildingName)
+      data: data.map(item => item.buildingName),
+      axisLabel: {
+        interval: 0,
+        rotate: data.length > 5 ? 30 : 0,
+        fontSize: 12
+      },
+      axisTick: {
+        alignWithLabel: true
+      }
     },
     yAxis: {
       type: 'value',
-      axisLabel: {
-        formatter: '{value}%'
+      name: '使用率(%)',
+      nameTextStyle: {
+        padding: [0, 0, 0, 30],
+        fontSize: 14
       },
-      max: 100
+      axisLabel: {
+        formatter: '{value}%',
+        fontSize: 12
+      },
+      max: 100,
+      splitLine: {
+        lineStyle: {
+          type: 'dashed'
+        }
+      }
     },
     series: [
       {
         name: '使用率',
         type: 'bar',
+        barWidth: data.length > 6 ? '40%' : '60%',
         data: data.map(item => (item.usageRate * 100).toFixed(2)),
         itemStyle: {
           color: function(params) {
@@ -361,12 +445,20 @@ const renderUsageRateChart = (data) => {
             if (value < 60) return '#91cc75' // 绿色，使用率低
             if (value < 80) return '#fac858' // 黄色，使用率中等
             return '#ee6666' // 红色，使用率高
-          }
+          },
+          borderRadius: [4, 4, 0, 0]
         },
         label: {
           show: true,
           position: 'top',
-          formatter: '{c}%'
+          formatter: '{c}%',
+          fontSize: 12
+        },
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0,0,0,0.2)'
+          }
         }
       }
     ]
@@ -389,16 +481,29 @@ const renderRoomTypeChart = (data) => {
     legend: {
       orient: 'vertical',
       left: 'left',
+      top: 'center',
+      textStyle: {
+        fontSize: 14
+      }
     },
     series: [
       {
         name: '房间类型',
         type: 'pie',
-        radius: '50%',
+        radius: '60%',
+        center: ['60%', '50%'],
         data: data.map(item => ({
           name: item.typeName,
           value: item.count
         })),
+        label: {
+          show: true,
+          formatter: '{b}: {c} ({d}%)',
+          fontSize: 14
+        },
+        labelLine: {
+          show: true
+        },
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
@@ -426,13 +531,18 @@ const renderGenderRatioChart = (data) => {
     },
     legend: {
       orient: 'vertical',
-      left: 'left'
+      left: 'left',
+      top: 'center',
+      textStyle: {
+        fontSize: 14
+      }
     },
     series: [
       {
         name: '性别比例',
         type: 'pie',
-        radius: ['40%', '70%'],
+        radius: ['30%', '60%'],
+        center: ['60%', '50%'],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 10,
@@ -440,18 +550,22 @@ const renderGenderRatioChart = (data) => {
           borderWidth: 2
         },
         label: {
-          show: false,
-          position: 'center'
+          show: true,
+          formatter: '{b}: {c} ({d}%)',
+          fontSize: 14,
+          position: 'outside'
         },
         emphasis: {
           label: {
             show: true,
-            fontSize: '18',
+            fontSize: 16,
             fontWeight: 'bold'
           }
         },
         labelLine: {
-          show: false
+          show: true,
+          length: 15,
+          length2: 10
         },
         data: [
           { 
@@ -613,7 +727,7 @@ onBeforeUnmount(() => {
     margin-bottom: 20px;
     
     .chart-card {
-      height: 350px;
+      height: 450px;
       
       .card-header {
         display: flex;
@@ -627,7 +741,7 @@ onBeforeUnmount(() => {
       }
       
       .chart-container {
-        height: 280px;
+        height: 380px;
         width: 100%;
         
         .chart {

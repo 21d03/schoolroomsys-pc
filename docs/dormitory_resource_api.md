@@ -59,7 +59,7 @@
 }
 ```
 
-## 3. 各宿舍楼使用率接口
+## 3. 各宿舍楼使用率接口 、各宿舍楼房间分布接口
 
 ### 接口信息
 - **URL**: `/school/dormitory/resource/usage-rate`
