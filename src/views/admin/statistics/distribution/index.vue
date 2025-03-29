@@ -255,10 +255,11 @@ const getClassDistribution = async () => {
   loadingClassDistribution.value = true
   try {
     const params = selectedCollege.value ? { collegeId: selectedCollege.value } : {}
-    const res = await request.get('/SchoolRoomSys/school/personnel/class/distribution', { params })
+    const res = await request.get('/school/class-stat/student-distribution', { params })
     const { code, msg, data } = res.data
-    if (code === 0) {
+    if (code === 1) {
       renderClassDistributionChart(data)
+      console.log('班级人数分布接口返回数据:', res.data)
     } else {
       ElMessage.error(msg || '获取班级分布数据失败')
     }

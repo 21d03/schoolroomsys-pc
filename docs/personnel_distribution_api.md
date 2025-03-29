@@ -205,32 +205,30 @@ curl -X GET \
 
 ## 5. 班级人数分布接口
 
-### 接口信息
-- **接口地址**：/school/personnel/class/distribution
-- **请求方式**：GET
-- **接口描述**：获取班级人数分布数据，可按学院筛选
+URL: http://localhost:8080/SchoolRoomSys/school/class-stat/student-distribution
+请求方式: GET
+
+### 请求头
+Authorization: Bearer {token}
 
 ### 请求参数
+| 参数名    | 必选 | 类型   | 说明                             |
+| --------- | ---- | ------ | -------------------------------- |
+| collegeId | 否   | String | 学院ID，不传则返回所有学院的班级 |
 
-| 参数名 | 必选 | 类型 | 说明 |
-| --- | --- | --- | --- |
-| collegeId | 否 | String | 学院ID，不传则返回所有学院的班级 |
-
-### 响应参数
+### 响应结果
 ```json
 {
   "code": 0,
   "msg": "success",
   "data": [
     {
-      "classId": "2001",
       "className": "计算机科学与技术1班",
       "collegeId": "1001",
       "collegeName": "计算机学院",
       "studentCount": 42
     },
     {
-      "classId": "2002",
       "className": "软件工程2班",
       "collegeId": "1001",
       "collegeName": "计算机学院",
@@ -240,13 +238,33 @@ curl -X GET \
 }
 ```
 
-| 参数名 | 类型 | 说明 |
-| --- | --- | --- |
-| classId | String | 班级ID |
-| className | String | 班级名称 |
-| collegeId | String | 所属学院ID |
-| collegeName | String | 所属学院名称 |
+### 响应参数说明
+| 参数名       | 类型   | 说明         |
+| ------------ | ------ | ------------ |
+| className    | String | 班级名称     |
+| collegeId    | String | 所属学院ID   |
+| collegeName  | String | 所属学院名称 |
 | studentCount | Number | 班级学生人数 |
+
+### 请求示例
+```bash
+curl -X GET \
+  'http://localhost:8080/SchoolRoomSys/school/class-stat/student-distribution?collegeId=1001' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+```
+
+### 特别说明
+1. 接口功能：获取班级人数分布数据，可按学院筛选
+2. 数据来源：
+   - className: class_info表的profession和class_name拼接
+   - collegeId: class_info表的college_id
+   - collegeName: class_info表的college_name
+   - studentCount: student_info表中同时匹配profession和class_room的记录数量
+3. 查询规则：
+   - 可通过collegeId参数筛选特定学院的班级
+   - 不传collegeId则返回所有学院的班级
+4. 返回数据按学院ID、专业名称、班级名称排序
+5. 需要登录权限才能调用此接口
 
 ## 6. 人员覆盖率接口
 
