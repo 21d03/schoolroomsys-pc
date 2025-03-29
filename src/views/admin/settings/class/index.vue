@@ -59,10 +59,9 @@
         border
         style="width: 100%"
       >
-        <el-table-column prop="classId" label="班级编号" width="120" align="center" />
-        <el-table-column prop="className" label="班级名称" min-width="120" align="center" />
-        <el-table-column prop="collegeName" label="所属学院" min-width="150" align="center" />
-        <el-table-column prop="professionName" label="所属专业" min-width="150" align="center" />
+        <el-table-column prop="collegeName" label="学院" min-width="150" align="center" />
+        <el-table-column prop="profession" label="专业" min-width="150" align="center" />
+        <el-table-column prop="className" label="班级" min-width="120" align="center" />
         <el-table-column prop="studentCount" label="学生人数" width="100" align="center" />
         <el-table-column label="操作" width="180" align="center">
           <template #default="scope">
@@ -111,12 +110,9 @@
         :rules="rules"
         label-width="100px"
       >
-        <el-form-item label="班级编号" prop="classId">
-          <el-input v-model="classForm.classId" placeholder="请输入班级编号" :disabled="dialogType === 'edit'" style="width: 340px" />
-        </el-form-item>
-        <el-form-item label="所属学院" prop="collegeId">
+        <el-form-item label="所属学院" prop="collegeName">
           <el-select 
-            v-model="classForm.collegeId" 
+            v-model="classForm.collegeName" 
             placeholder="请选择所属学院"
             @change="handleFormCollegeChange"
             style="width: 340px"
@@ -125,15 +121,15 @@
               v-for="item in collegeOptions"
               :key="item.collegeId"
               :label="item.collegeName"
-              :value="item.collegeId"
+              :value="item.collegeName"
             />
           </el-select>
         </el-form-item>
-        <el-form-item label="所属专业" prop="professionId">
+        <el-form-item label="所属专业" prop="profession">
           <el-select 
-            v-model="classForm.professionId" 
+            v-model="classForm.profession" 
             placeholder="请选择专业"
-            :disabled="!classForm.collegeId"
+            :disabled="!classForm.collegeName"
             style="width: 340px"
           >
             <el-option
@@ -186,10 +182,11 @@ const searchForm = reactive({
 
 // 班级表单数据
 const classForm = reactive({
-  classId: '',
-  collegeId: '',
-  professionId: '',
-  className: ''
+  collegeName: '',
+  profession: '',
+  className: '',
+  oldProfession: '',
+  oldClassName: ''
 })
 
 // 下拉选项数据
@@ -201,13 +198,10 @@ const classList = ref([])
 
 // 表单校验规则
 const rules = {
-  classId: [
-    { required: true, message: '请输入班级编号', trigger: 'blur' }
-  ],
-  collegeId: [
+  collegeName: [
     { required: true, message: '请选择所属学院', trigger: 'change' }
   ],
-  professionId: [
+  profession: [
     { required: true, message: '请选择所属专业', trigger: 'change' }
   ],
   className: [
@@ -239,7 +233,7 @@ const getProfessionOptions = async (collegeName) => {
       pageSize: 999999, // 获取所有数据
       collegeName: collegeName
     }
-    const res = await request.post('/school/class/page', params)
+    const res = await request.post('/school/class-manage/page', params)
     const { code, msg, data } = res.data
     if (code === 0) {
       // 从返回数据中提取专业列表
@@ -263,9 +257,20 @@ const getProfessionOptions = async (collegeName) => {
 const getClassList = async () => {
   loading.value = true
   try {
-    // TODO: 调用获取班级列表接口
-    classList.value = []
-    page.total = 0
+    const params = {
+      pageNum: page.current,
+      pageSize: page.size,
+      collegeName: searchForm.collegeId ? collegeOptions.value.find(item => item.collegeId === searchForm.collegeId)?.collegeName : '',
+      className: ''
+    }
+    const res = await request.post('/school/class-manage/page', params)
+    const { code, msg, data } = res.data
+    if (code === 0) {
+      classList.value = data.records
+      page.total = data.total
+    } else {
+      ElMessage.error(msg || '获取班级列表失败')
+    }
   } catch (error) {
     console.error('获取班级列表失败:', error)
     ElMessage.error('获取班级列表失败，请稍后重试')
@@ -290,7 +295,7 @@ const handleCollegeChange = (value) => {
 
 // 表单学院选择变化
 const handleFormCollegeChange = (value) => {
-  classForm.professionId = ''
+  classForm.profession = ''
   if (value) {
     getProfessionOptions(value)
   } else {
@@ -324,29 +329,29 @@ const resetSearch = () => {
 // 添加班级
 const handleAdd = () => {
   dialogType.value = 'add'
-  classForm.classId = ''
-  classForm.collegeId = ''
-  classForm.professionId = ''
+  classForm.collegeName = ''
+  classForm.profession = ''
   classForm.className = ''
-  professionOptions.value = []
+  classForm.oldProfession = ''
+  classForm.oldClassName = ''
   dialogVisible.value = true
 }
 
 // 编辑班级
 const handleEdit = (row) => {
   dialogType.value = 'edit'
-  classForm.classId = row.classId
-  classForm.collegeId = row.collegeId
-  classForm.professionId = row.professionId
+  classForm.collegeName = row.collegeName
+  classForm.profession = row.profession
   classForm.className = row.className
-  getProfessionOptions(row.collegeId)
+  classForm.oldProfession = row.profession
+  classForm.oldClassName = row.className
   dialogVisible.value = true
 }
 
 // 删除班级
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确定要删除班级"${row.className}"吗？`,
+    `确定要删除班级"${row.className}"吗？删除前请确保没有关联的学生和教师。`,
     '提示',
     {
       confirmButtonText: '确定',
@@ -355,9 +360,18 @@ const handleDelete = (row) => {
     }
   ).then(async () => {
     try {
-      // TODO: 调用删除班级接口
-      ElMessage.success('删除成功')
-      getClassList()
+      const params = {
+        profession: row.profession,
+        className: row.className
+      }
+      const res = await request.delete('/school/class-manage/delete', { params })
+      const { code, msg } = res.data
+      if (code === 0) {
+        ElMessage.success('删除成功')
+        getClassList()
+      } else {
+        ElMessage.error(msg)
+      }
     } catch (error) {
       console.error('删除班级失败:', error)
       ElMessage.error('删除班级失败，请稍后重试')
@@ -372,10 +386,33 @@ const submitForm = async () => {
   classFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
-        // TODO: 调用添加/编辑班级接口
-        ElMessage.success(dialogType.value === 'add' ? '添加成功' : '编辑成功')
-        dialogVisible.value = false
-        getClassList()
+        let res
+        if (dialogType.value === 'add') {
+          const params = {
+            collegeName: classForm.collegeName,
+            profession: classForm.profession,
+            className: classForm.className
+          }
+          res = await request.post('/school/class-manage/add', params)
+        } else {
+          const params = {
+            collegeName: classForm.collegeName,
+            oldProfession: classForm.oldProfession,
+            newProfession: classForm.profession,
+            oldClassName: classForm.oldClassName,
+            newClassName: classForm.className
+          }
+          res = await request.put('/school/class-manage/update', params)
+        }
+        
+        const { code, msg } = res.data
+        if (code === 0) {
+          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '编辑成功')
+          dialogVisible.value = false
+          getClassList()
+        } else {
+          ElMessage.error(msg)
+        }
       } catch (error) {
         console.error(dialogType.value === 'add' ? '添加班级失败:' : '编辑班级失败:', error)
         ElMessage.error((dialogType.value === 'add' ? '添加' : '编辑') + '班级失败，请稍后重试')
