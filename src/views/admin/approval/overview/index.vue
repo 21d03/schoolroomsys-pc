@@ -72,28 +72,74 @@
         <el-tabs v-model="activeTab" @tab-click="handleTabClick">
           <el-tab-pane label="请假审批" name="leave">
             <div class="tab-content">
+              <!-- 添加查询表单 -->
+              <div class="filter-container">
+                <el-form :inline="true" :model="leaveQueryParams" ref="leaveQueryForm">
+                  <el-form-item label="学生姓名" prop="studentName">
+                    <el-input
+                      v-model="leaveQueryParams.studentName"
+                      placeholder="请输入学生姓名"
+                      clearable
+                      @keyup.enter="handleLeaveQuery"
+                    />
+                  </el-form-item>
+                  <el-form-item label="学号" prop="studentId">
+                    <el-input
+                      v-model="leaveQueryParams.studentId"
+                      placeholder="请输入学号"
+                      clearable
+                      @keyup.enter="handleLeaveQuery"
+                    />
+                  </el-form-item>
+                  <el-form-item label="状态" prop="status">
+                    <el-select v-model="leaveQueryParams.status" placeholder="请选择状态" clearable>
+                      <el-option label="待审批" value="0" />
+                      <el-option label="已通过" value="1" />
+                      <el-option label="已拒绝" value="2" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button type="primary" @click="handleLeaveQuery">查询</el-button>
+                    <el-button @click="resetLeaveQuery">重置</el-button>
+                  </el-form-item>
+                </el-form>
+              </div>
+              
+              <!-- 请假列表 -->
               <el-table 
                 :data="pendingLeaveList" 
                 v-loading="loadingLeave" 
                 style="width: 100%"
-                empty-text="暂无待处理的请假申请"
+                empty-text="暂无请假申请数据"
               >
-                <el-table-column prop="leaveId" label="申请编号" width="100" align="center" />
+                <el-table-column prop="approvalId" label="申请编号" width="100" align="center" />
                 <el-table-column prop="studentName" label="学生姓名" width="120" align="center" />
                 <el-table-column prop="studentId" label="学号" width="120" align="center" />
-                <el-table-column prop="leaveType" label="请假类型" width="100" align="center" />
                 <el-table-column prop="leaveReason" label="请假原因" min-width="200" align="center" />
-                <el-table-column prop="leaveStartTime" label="开始时间" width="160" align="center" />
-                <el-table-column prop="leaveEndTime" label="结束时间" width="160" align="center" />
-                <el-table-column prop="applyTime" label="申请时间" width="160" align="center" />
-                <el-table-column label="操作" width="180" align="center" fixed="right">
+                <el-table-column prop="startTime" label="开始时间" width="160" align="center" />
+                <el-table-column prop="endTime" label="结束时间" width="160" align="center" />
+                <el-table-column prop="createTime" label="申请时间" width="160" align="center" />
+                <el-table-column label="状态" width="100" align="center">
                   <template #default="scope">
-                    <el-button type="primary" link @click="handleViewLeave(scope.row)">查看</el-button>
-                    <el-button type="success" link @click="handleApprove('leave', scope.row)">批准</el-button>
-                    <el-button type="danger" link @click="handleReject('leave', scope.row)">拒绝</el-button>
+                    <el-tag :type="getStatusType(scope.row.status)">
+                      {{ getStatusText(scope.row.status) }}
+                    </el-tag>
                   </template>
                 </el-table-column>
               </el-table>
+
+              <!-- 分页 -->
+              <div class="pagination-container">
+                <el-pagination
+                  v-model:current-page="leaveQueryParams.pageNum"
+                  v-model:page-size="leaveQueryParams.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :total="leaveTotal"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleLeaveSizeChange"
+                  @current-change="handleLeaveCurrentChange"
+                />
+              </div>
             </div>
           </el-tab-pane>
           <el-tab-pane label="报修申请" name="repair">
@@ -111,13 +157,6 @@
                 <el-table-column prop="repairType" label="报修类型" width="100" align="center" />
                 <el-table-column prop="repairContent" label="报修内容" min-width="200" align="center" />
                 <el-table-column prop="applyTime" label="申请时间" width="160" align="center" />
-                <el-table-column label="操作" width="180" align="center" fixed="right">
-                  <template #default="scope">
-                    <el-button type="primary" link @click="handleViewRepair(scope.row)">查看</el-button>
-                    <el-button type="success" link @click="handleApprove('repair', scope.row)">批准</el-button>
-                    <el-button type="danger" link @click="handleReject('repair', scope.row)">拒绝</el-button>
-                  </template>
-                </el-table-column>
               </el-table>
             </div>
           </el-tab-pane>
@@ -285,6 +324,19 @@ const processingTitle = computed(() => {
   return `${actionText}${typeText}申请`
 })
 
+// 请假查询参数
+const leaveQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  studentId: '',
+  studentName: '',
+  status: ''
+})
+
+// 请假列表数据
+const leaveTotal = ref(0)
+const leaveQueryForm = ref(null)
+
 // 获取统计数据
 const getApprovalStats = async () => {
   try {
@@ -315,37 +367,66 @@ const getApprovalStats = async () => {
 const getPendingLeaveList = async () => {
   loadingLeave.value = true
   try {
-    // 模拟API调用
-    setTimeout(() => {
-      pendingLeaveList.value = [
-        {
-          leaveId: 'L20230001',
-          studentName: '张三',
-          studentId: '20210101',
-          leaveType: '事假',
-          leaveReason: '家中有事，需要请假回家处理',
-          leaveStartTime: '2023-09-15 08:00',
-          leaveEndTime: '2023-09-18 20:00',
-          applyTime: '2023-09-10 15:30',
-          attachments: []
-        },
-        {
-          leaveId: 'L20230002',
-          studentName: '李四',
-          studentId: '20210102',
-          leaveType: '病假',
-          leaveReason: '感冒发烧，需要去医院就诊',
-          leaveStartTime: '2023-09-16 08:00',
-          leaveEndTime: '2023-09-17 20:00',
-          applyTime: '2023-09-15 10:45',
-          attachments: []
-        }
-      ]
-      loadingLeave.value = false
-    }, 500)
+    const res = await request.post('/school/approval/leave/page', leaveQueryParams)
+    const { code, msg, data } = res.data
+    if (code === 0 || code === 1) {
+      pendingLeaveList.value = data.records
+      leaveTotal.value = data.total
+    } else {
+      ElMessage.error(res.msg || '获取请假列表失败')
+    }
   } catch (error) {
-    console.error('获取待处理请假列表失败:', error)
+    console.error('获取请假列表失败:', error)
+    ElMessage.error('获取请假列表失败，请稍后重试')
+  } finally {
     loadingLeave.value = false
+  }
+}
+
+// 查询请假列表
+const handleLeaveQuery = () => {
+  leaveQueryParams.pageNum = 1
+  getPendingLeaveList()
+}
+
+// 重置请假查询
+const resetLeaveQuery = () => {
+  leaveQueryForm.value?.resetFields()
+  leaveQueryParams.pageNum = 1
+  leaveQueryParams.pageSize = 10
+  getPendingLeaveList()
+}
+
+// 处理请假列表页码变化
+const handleLeaveCurrentChange = (val) => {
+  leaveQueryParams.pageNum = val
+  getPendingLeaveList()
+}
+
+// 处理请假列表每页数量变化
+const handleLeaveSizeChange = (val) => {
+  leaveQueryParams.pageSize = val
+  leaveQueryParams.pageNum = 1
+  getPendingLeaveList()
+}
+
+// 获取状态类型
+const getStatusType = (status) => {
+  switch (status) {
+    case '0': return 'warning'
+    case '1': return 'success'
+    case '2': return 'danger'
+    default: return 'info'
+  }
+}
+
+// 获取状态文本
+const getStatusText = (status) => {
+  switch (status) {
+    case '0': return '待审批'
+    case '1': return '已通过'
+    case '2': return '已拒绝'
+    default: return '未知'
   }
 }
 
