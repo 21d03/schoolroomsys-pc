@@ -92,7 +92,12 @@
                     />
                   </el-form-item>
                   <el-form-item label="状态" prop="status">
-                    <el-select v-model="leaveQueryParams.status" placeholder="请选择状态" clearable>
+                    <el-select 
+                      v-model="leaveQueryParams.status" 
+                      placeholder="请选择状态" 
+                      clearable
+                      style="width: 160px;"
+                    >
                       <el-option label="待审批" value="0" />
                       <el-option label="已通过" value="1" />
                       <el-option label="已拒绝" value="2" />
@@ -144,20 +149,97 @@
           </el-tab-pane>
           <el-tab-pane label="报修申请" name="repair">
             <div class="tab-content">
+              <!-- 添加查询表单 -->
+              <div class="filter-container">
+                <el-form :inline="true" :model="repairQueryParams" ref="repairQueryForm">
+                  <el-form-item label="学生姓名" prop="studentName">
+                    <el-input
+                      v-model="repairQueryParams.studentName"
+                      placeholder="请输入学生姓名"
+                      clearable
+                      @keyup.enter="handleRepairQuery"
+                    />
+                  </el-form-item>
+                  <el-form-item label="学号" prop="studentId">
+                    <el-input
+                      v-model="repairQueryParams.studentId"
+                      placeholder="请输入学号"
+                      clearable
+                      @keyup.enter="handleRepairQuery"
+                    />
+                  </el-form-item>
+                  <el-form-item label="宿管审批状态" prop="hmStatus">
+                    <el-select 
+                      v-model="repairQueryParams.hmStatus" 
+                      placeholder="请选择状态" 
+                      clearable
+                      style="width: 160px;"
+                    >
+                      <el-option label="待审批" value="0" />
+                      <el-option label="已通过" value="1" />
+                      <el-option label="已拒绝" value="2" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item label="维修状态" prop="rpStatus">
+                    <el-select 
+                      v-model="repairQueryParams.rpStatus" 
+                      placeholder="请选择状态" 
+                      clearable
+                      style="width: 160px;"
+                    >
+                      <el-option label="待处理" value="0" />
+                      <el-option label="已完成" value="1" />
+                      <el-option label="已拒绝" value="2" />
+                    </el-select>
+                  </el-form-item>
+                  <el-form-item>
+                    <el-button type="primary" @click="handleRepairQuery">查询</el-button>
+                    <el-button @click="resetRepairQuery">重置</el-button>
+                  </el-form-item>
+                </el-form>
+              </div>
+              
+              <!-- 报修列表 -->
               <el-table 
                 :data="pendingRepairList" 
                 v-loading="loadingRepair" 
                 style="width: 100%"
-                empty-text="暂无待处理的报修申请"
+                empty-text="暂无报修申请数据"
               >
-                <el-table-column prop="repairId" label="申请编号" width="100" align="center" />
+                <el-table-column prop="approvalId" label="申请编号" width="100" align="center" />
                 <el-table-column prop="studentName" label="申请人" width="120" align="center" />
-                <el-table-column prop="buildingName" label="宿舍楼" width="120" align="center" />
-                <el-table-column prop="roomNumber" label="房间号" width="100" align="center" />
-                <el-table-column prop="repairType" label="报修类型" width="100" align="center" />
+                <el-table-column prop="buildName" label="宿舍楼" width="120" align="center" />
+                <el-table-column prop="roomId" label="房间号" width="100" align="center" />
                 <el-table-column prop="repairContent" label="报修内容" min-width="200" align="center" />
-                <el-table-column prop="applyTime" label="申请时间" width="160" align="center" />
+                <el-table-column prop="createTime" label="申请时间" width="160" align="center" />
+                <el-table-column label="宿管审批" width="100" align="center">
+                  <template #default="scope">
+                    <el-tag :type="getStatusType(scope.row.hmStatus)">
+                      {{ getStatusText(scope.row.hmStatus) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column label="维修状态" width="100" align="center">
+                  <template #default="scope">
+                    <el-tag :type="getRepairStatusType(scope.row.rpStatus)">
+                      {{ getRepairStatusText(scope.row.rpStatus) }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
               </el-table>
+
+              <!-- 分页 -->
+              <div class="pagination-container">
+                <el-pagination
+                  v-model:current-page="repairQueryParams.pageNum"
+                  v-model:page-size="repairQueryParams.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :total="repairTotal"
+                  layout="total, sizes, prev, pager, next, jumper"
+                  @size-change="handleRepairSizeChange"
+                  @current-change="handleRepairCurrentChange"
+                />
+              </div>
             </div>
           </el-tab-pane>
         </el-tabs>
@@ -337,6 +419,20 @@ const leaveQueryParams = reactive({
 const leaveTotal = ref(0)
 const leaveQueryForm = ref(null)
 
+// 报修查询参数
+const repairQueryParams = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  studentId: '',
+  studentName: '',
+  hmStatus: '',
+  rpStatus: ''
+})
+
+// 报修列表数据
+const repairTotal = ref(0)
+const repairQueryForm = ref(null)
+
 // 获取统计数据
 const getApprovalStats = async () => {
   try {
@@ -434,37 +530,66 @@ const getStatusText = (status) => {
 const getPendingRepairList = async () => {
   loadingRepair.value = true
   try {
-    // 模拟API调用
-    setTimeout(() => {
-      pendingRepairList.value = [
-        {
-          repairId: 'R20230001',
-          studentName: '王五',
-          studentId: '20210103',
-          buildingName: '梁园1号楼',
-          roomNumber: '101',
-          repairType: '水电',
-          repairContent: '宿舍水龙头漏水，需要修理',
-          applyTime: '2023-09-14 09:20',
-          images: []
-        },
-        {
-          repairId: 'R20230002',
-          studentName: '赵六',
-          studentId: '20210104',
-          buildingName: '睢阳3号楼',
-          roomNumber: '205',
-          repairType: '家具',
-          repairContent: '衣柜门把手损坏，无法正常使用',
-          applyTime: '2023-09-15 14:10',
-          images: []
-        }
-      ]
-      loadingRepair.value = false
-    }, 500)
+    const res = await request.post('/school/approval/repair/page', repairQueryParams)
+    const { code, msg, data } = res.data
+    if (code === 0) {
+      pendingRepairList.value = data.records
+      repairTotal.value = data.total
+    } else {
+      ElMessage.error(msg || '获取报修列表失败')
+    }
   } catch (error) {
-    console.error('获取待处理报修列表失败:', error)
+    console.error('获取报修列表失败:', error)
+    ElMessage.error('获取报修列表失败，请稍后重试')
+  } finally {
     loadingRepair.value = false
+  }
+}
+
+// 查询报修列表
+const handleRepairQuery = () => {
+  repairQueryParams.pageNum = 1
+  getPendingRepairList()
+}
+
+// 重置报修查询
+const resetRepairQuery = () => {
+  repairQueryForm.value?.resetFields()
+  repairQueryParams.pageNum = 1
+  repairQueryParams.pageSize = 10
+  getPendingRepairList()
+}
+
+// 处理报修列表页码变化
+const handleRepairCurrentChange = (val) => {
+  repairQueryParams.pageNum = val
+  getPendingRepairList()
+}
+
+// 处理报修列表每页数量变化
+const handleRepairSizeChange = (val) => {
+  repairQueryParams.pageSize = val
+  repairQueryParams.pageNum = 1
+  getPendingRepairList()
+}
+
+// 获取维修状态类型
+const getRepairStatusType = (status) => {
+  switch (status) {
+    case '0': return 'info'
+    case '1': return 'success'
+    case '2': return 'danger'
+    default: return 'info'
+  }
+}
+
+// 获取维修状态文本
+const getRepairStatusText = (status) => {
+  switch (status) {
+    case '0': return '待处理'
+    case '1': return '已完成'
+    case '2': return '已拒绝'
+    default: return '未知'
   }
 }
 
@@ -643,6 +768,11 @@ onMounted(() => {
     margin-bottom: 8px;
     border-radius: 4px;
     cursor: pointer;
+  }
+
+  // 添加状态选择框的样式
+  :deep(.el-select) {
+    width: 160px;  // 设置选择框宽度为160px
   }
 }
 </style> 
