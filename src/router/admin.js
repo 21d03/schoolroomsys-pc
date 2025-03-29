@@ -113,20 +113,20 @@ export const adminRoutes = {
     {
       path: 'settings',
       name: 'SystemSettings',
-      redirect: '/admin/settings/permission',
+      redirect: '/admin/settings/college',
       meta: { title: '系统设置' },
       children: [
         {
-          path: 'permission',
-          name: 'PermissionConfig',
-          component: UnderDevelopment,
-          meta: { title: '权限配置' }
-        },
-        {
           path: 'college',
           name: 'CollegeManagement',
+          component: () => import('@/views/admin/settings/college/index.vue'),
+          meta: { title: '学院管理' }
+        },
+        {
+          path: 'class',
+          name: 'ClassManagement',
           component: UnderDevelopment,
-          meta: { title: '学院/班级管理' }
+          meta: { title: '班级管理' }
         }
       ]
     }
