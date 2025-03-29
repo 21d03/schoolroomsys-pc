@@ -88,17 +88,32 @@
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="工号" prop="hmId">
-              <el-input v-model="managerForm.hmId" placeholder="请输入工号" maxlength="20" />
+              <el-input 
+                v-model="managerForm.hmId" 
+                placeholder="请输入工号" 
+                maxlength="20"
+                :disabled="dialogTitle === '编辑宿管'"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="姓名" prop="hmName">
-              <el-input v-model="managerForm.hmName" placeholder="请输入姓名" maxlength="20" />
+              <el-input 
+                v-model="managerForm.hmName" 
+                placeholder="请输入姓名" 
+                maxlength="20"
+                :disabled="dialogTitle === '编辑宿管'"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="性别" prop="hmSex">
-              <el-select v-model="managerForm.hmSex" placeholder="请选择性别" style="width: 100%">
+              <el-select 
+                v-model="managerForm.hmSex" 
+                placeholder="请选择性别" 
+                style="width: 100%"
+                :disabled="dialogTitle === '编辑宿管'"
+              >
                 <el-option label="男" value="男" />
                 <el-option label="女" value="女" />
               </el-select>
@@ -112,8 +127,8 @@
           <el-col :span="12" v-if="dialogTitle === '编辑宿管'">
             <el-form-item label="状态" prop="isUsed">
               <el-select v-model="managerForm.isUsed" placeholder="请选择状态" style="width: 100%">
-                <el-option label="在职" value="1" />
-                <el-option label="离职" value="0" />
+                <el-option label="启用" value="1" />
+                <el-option label="禁用" value="0" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -260,13 +275,13 @@ const handleEdit = (row) => {
   dialogVisible.value = true
   resetForm()
   
-  // 填充表单数据，从masterId映射到hmId等字段
+  // 填充表单数据
   Object.assign(managerForm, {
     hmId: row.masterId,
     hmName: row.masterName,
     hmSex: row.sex,
     hmPhone: row.phone,
-    isUsed: row.isUsed
+    isUsed: row.isUsed || '1' // 默认在职
   })
 }
 
@@ -280,9 +295,25 @@ const handleDelete = (row) => {
       cancelButtonText: '取消',
       type: 'warning'
     }
-  ).then(() => {
-    ElMessage.success(`已删除宿管 ${row.masterName}`)
-    getList() // 刷新列表
+  ).then(async () => {
+    try {
+      const response = await request({
+        url: `/school/house/master/${row.masterId}`,
+        method: 'delete'
+      })
+      
+      const { code, msg } = response.data
+      
+      if (code === 0) {
+        ElMessage.success(`已删除宿管 ${row.masterName}`)
+        getList() // 刷新列表
+      } else {
+        ElMessage.error(msg || '删除宿管失败')
+      }
+    } catch (error) {
+      console.error('删除宿管失败:', error)
+      ElMessage.error('删除宿管失败，请稍后重试')
+    }
   }).catch(() => {
     ElMessage({
       type: 'info',
@@ -322,34 +353,31 @@ const submitForm = async () => {
     }
     
     try {
-      let response;
-      
-      if (dialogTitle.value === '新增宿管') {
-        // 新增宿管
-        response = await request({
-          url: '/school/house/master/add',
-          method: 'post',
-          data: {
-            hmId: managerForm.hmId,
-            hmName: managerForm.hmName,
-            hmSex: managerForm.hmSex,
-            hmPhone: managerForm.hmPhone
-          }
-        })
-      } else {
-        // 编辑宿管
-        response = await request({
-          url: '/school/house/master/update',
-          method: 'put',
-          data: {
-            hmId: managerForm.hmId,
-            hmName: managerForm.hmName,
-            hmSex: managerForm.hmSex,
-            hmPhone: managerForm.hmPhone,
-            isUsed: managerForm.isUsed
-          }
-        })
+      let url = '/school/house/master/add'
+      let method = 'post'
+      let data = {
+        hmId: managerForm.hmId,
+        hmName: managerForm.hmName,
+        hmSex: managerForm.hmSex,
+        hmPhone: managerForm.hmPhone
       }
+      
+      // 如果是编辑操作
+      if (dialogTitle.value === '编辑宿管') {
+        url = '/school/house/master/update'
+        method = 'put'
+        data = {
+          hmId: managerForm.hmId,
+          hmPhone: managerForm.hmPhone,
+          isUsed: managerForm.isUsed
+        }
+      }
+      
+      const response = await request({
+        url,
+        method,
+        data
+      })
       
       const { code, msg } = response.data
       
@@ -447,5 +475,20 @@ onMounted(() => {
       color: #303133;
     }
   }
+}
+
+// 深度选择器，修改禁用输入框样式
+:deep(.el-input.is-disabled .el-input__inner) {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #606266;
+  cursor: not-allowed;
+}
+
+:deep(.el-select.is-disabled .el-input__inner) {
+  background-color: #f5f7fa;
+  border-color: #e4e7ed;
+  color: #606266;
+  cursor: not-allowed;
 }
 </style> 
