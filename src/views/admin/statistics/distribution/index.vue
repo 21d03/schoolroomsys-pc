@@ -183,7 +183,7 @@ const getPersonnelOverview = async () => {
       overviewData.dormManagerCount = data.dormManagerCount || 0
       overviewData.maintenanceCount = data.maintenanceCount || 0
     } else {
-      ElMessage.error(res.msg || '获取人员总览数据失败')
+      ElMessage.error(msg || '获取人员总览数据失败')
     }
   } catch (error) {
     console.error('获取人员总览数据失败:', error)
@@ -194,14 +194,16 @@ const getPersonnelOverview = async () => {
 // 获取学院列表
 const getCollegeList = async () => {
   try {
-    const res = await request.get('/school/personnel/college/list')
-    if (res.code === 0) {
-      collegeOptions.value = res.data.map(item => ({
+    const res = await request.get('/school/college/list2')
+    const { code, msg, data } = res.data
+    if (code === 1) {
+      collegeOptions.value = data.map(item => ({
         label: item.collegeName,
         value: item.collegeId
       }))
+      console.log('学院列表接口返回数据:', res)
     } else {
-      ElMessage.error(res.msg || '获取学院列表失败')
+      ElMessage.error(msg || '获取学院列表失败')
     }
   } catch (error) {
     console.error('获取学院列表失败:', error)
@@ -213,11 +215,12 @@ const getCollegeList = async () => {
 const getCollegeDistribution = async () => {
   loadingCollegeDistribution.value = true
   try {
-    const res = await request.get('/school/personnel/college/student-distribution')
-    if (res.code === 0) {
-      renderCollegeDistributionChart(res.data)
+    const res = await request.get('/school/college/student-distribution')
+    const { code, msg, data } = res.data
+    if (code === 1) {
+      renderCollegeDistributionChart(data)
     } else {
-      ElMessage.error(res.msg || '获取学院分布数据失败')
+      ElMessage.error(msg || '获取学院分布数据失败')
     }
   } catch (error) {
     console.error('获取学院分布数据失败:', error)
@@ -231,11 +234,12 @@ const getCollegeDistribution = async () => {
 const getStudentGenderRatio = async () => {
   loadingStudentGenderRatio.value = true
   try {
-    const res = await request.get('/school/personnel/student/gender-ratio')
-    if (res.code === 0) {
-      renderStudentGenderRatioChart(res.data)
+    const res = await request.get('/SchoolRoomSys/school/personnel/student/gender-ratio')
+    const { code, msg, data } = res.data
+    if (code === 0) {
+      renderStudentGenderRatioChart(data)
     } else {
-      ElMessage.error(res.msg || '获取学生性别比例数据失败')
+      ElMessage.error(msg || '获取学生性别比例数据失败')
     }
   } catch (error) {
     console.error('获取学生性别比例数据失败:', error)
@@ -250,11 +254,12 @@ const getClassDistribution = async () => {
   loadingClassDistribution.value = true
   try {
     const params = selectedCollege.value ? { collegeId: selectedCollege.value } : {}
-    const res = await request.get('/school/personnel/class/distribution', { params })
-    if (res.code === 0) {
-      renderClassDistributionChart(res.data)
+    const res = await request.get('/SchoolRoomSys/school/personnel/class/distribution', { params })
+    const { code, msg, data } = res.data
+    if (code === 0) {
+      renderClassDistributionChart(data)
     } else {
-      ElMessage.error(res.msg || '获取班级分布数据失败')
+      ElMessage.error(msg || '获取班级分布数据失败')
     }
   } catch (error) {
     console.error('获取班级分布数据失败:', error)
@@ -268,11 +273,12 @@ const getClassDistribution = async () => {
 const getCoverageRate = async () => {
   loadingCoverageRate.value = true
   try {
-    const res = await request.get('/school/personnel/coverage-rate')
-    if (res.code === 0) {
-      renderCoverageRateChart(res.data)
+    const res = await request.get('/SchoolRoomSys/school/personnel/coverage-rate')
+    const { code, msg, data } = res.data
+    if (code === 0) {
+      renderCoverageRateChart(data)
     } else {
-      ElMessage.error(res.msg || '获取人员覆盖率数据失败')
+      ElMessage.error(msg || '获取人员覆盖率数据失败')
     }
   } catch (error) {
     console.error('获取人员覆盖率数据失败:', error)

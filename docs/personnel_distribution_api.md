@@ -53,15 +53,16 @@ curl -X GET \
 
 ## 2. 学院列表接口
 
-### 接口信息
-- **接口地址**：/school/personnel/college/list
-- **请求方式**：GET
-- **接口描述**：获取所有学院信息列表
+URL: http://localhost:8080/SchoolRoomSys/school/college/list2
+请求方式: GET
+
+### 请求头
+Authorization: Bearer {token}
 
 ### 请求参数
 无
 
-### 响应参数
+### 响应结果
 ```json
 {
   "code": 0,
@@ -79,22 +80,38 @@ curl -X GET \
 }
 ```
 
-| 参数名 | 类型 | 说明 |
-| --- | --- | --- |
-| collegeId | String | 学院ID |
+### 响应参数说明
+| 参数名      | 类型   | 说明     |
+| ----------- | ------ | -------- |
+| collegeId   | String | 学院ID   |
 | collegeName | String | 学院名称 |
+
+### 请求示例
+```bash
+curl -X GET \
+  'http://localhost:8080/SchoolRoomSys/school/college/list' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+```
+
+### 特别说明
+1. 接口功能：获取所有学院信息列表
+2. 数据来源：直接查询college_info表
+3. 无需任何请求参数
+4. 接口返回所有学院的ID和名称
+5. 需要登录权限才能调用此接口
 
 ## 3. 各学院学生分布接口
 
-### 接口信息
-- **接口地址**：/school/personnel/college/student-distribution
-- **请求方式**：GET
-- **接口描述**：获取各学院学生人数分布数据
+URL: http://localhost:8080/SchoolRoomSys/school/college/student-distribution
+请求方式: GET
+
+### 请求头
+Authorization: Bearer {token}
 
 ### 请求参数
 无
 
-### 响应参数
+### 响应结果
 ```json
 {
   "code": 0,
@@ -114,11 +131,32 @@ curl -X GET \
 }
 ```
 
-| 参数名 | 类型 | 说明 |
-| --- | --- | --- |
-| collegeId | String | 学院ID |
-| collegeName | String | 学院名称 |
+### 响应参数说明
+| 参数名       | 类型   | 说明           |
+| ------------ | ------ | -------------- |
+| collegeId    | String | 学院ID         |
+| collegeName  | String | 学院名称       |
 | studentCount | Number | 该学院学生人数 |
+
+### 请求示例
+```bash
+curl -X GET \
+  'http://localhost:8080/SchoolRoomSys/school/college/student-distribution' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+```
+
+### 特别说明
+1. 接口功能：获取各学院学生人数分布数据
+2. 数据来源：
+   - collegeId: college_info表的college_id
+   - collegeName: college_info表的college_name
+   - studentCount: student_info表中college字段匹配的记录数量
+3. 处理逻辑：
+   - 先从college_info表获取所有学院基本信息
+   - 然后遍历每个学院，统计student_info表中对应学院的学生数量
+4. 无需任何请求参数
+5. 接口返回所有学院的ID、名称和学生人数
+6. 需要登录权限才能调用此接口
 
 ## 4. 学生性别比例接口
 
