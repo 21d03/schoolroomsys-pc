@@ -127,7 +127,8 @@ const searchForm = reactive({
 // 学院表单数据
 const collegeForm = reactive({
   collegeId: '',
-  collegeName: ''
+  collegeName: '',
+  oldCollegeName: ''
 })
 
 // 表单校验规则
@@ -196,6 +197,7 @@ const handleEdit = (row) => {
   dialogType.value = 'edit'
   collegeForm.collegeId = row.collegeId
   collegeForm.collegeName = row.collegeName
+  collegeForm.oldCollegeName = row.collegeName
   dialogVisible.value = true
 }
 
@@ -253,10 +255,31 @@ const submitForm = async () => {
           } else {
             ElMessage.error(msg)
           }
+        } else {
+          // 编辑学院 - 使用JSON格式
+          const params = {
+            collegeId: collegeForm.collegeId,
+            oldCollegeName: collegeForm.oldCollegeName,
+            newCollegeName: collegeForm.collegeName
+          }
+          res = await request.put('/school/college/update', params, {
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          })
+          const { code, msg } = res.data
+          
+          if (code === 0) {
+            ElMessage.success('编辑成功')
+            dialogVisible.value = false
+            getCollegeList()
+          } else {
+            ElMessage.error(msg)
+          }
         }
       } catch (error) {
-        console.error('添加学院失败:', error)
-        ElMessage.error('添加学院失败，请稍后重试')
+        console.error(dialogType.value === 'add' ? '添加学院失败:' : '编辑学院失败:', error)
+        ElMessage.error((dialogType.value === 'add' ? '添加' : '编辑') + '学院失败，请稍后重试')
       }
     } else {
       return false
