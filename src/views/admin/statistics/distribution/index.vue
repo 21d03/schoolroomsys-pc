@@ -234,10 +234,11 @@ const getCollegeDistribution = async () => {
 const getStudentGenderRatio = async () => {
   loadingStudentGenderRatio.value = true
   try {
-    const res = await request.get('/SchoolRoomSys/school/personnel/student/gender-ratio')
+    const res = await request.get('/school/student-stat/gender-ratio')
     const { code, msg, data } = res.data
-    if (code === 0) {
+    if (code === 1) {
       renderStudentGenderRatioChart(data)
+      console.log('学生性别比例接口返回数据:', res.data)
     } else {
       ElMessage.error(msg || '获取学生性别比例数据失败')
     }

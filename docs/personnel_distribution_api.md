@@ -160,15 +160,16 @@ curl -X GET \
 
 ## 4. 学生性别比例接口
 
-### 接口信息
-- **接口地址**：/school/personnel/student/gender-ratio
-- **请求方式**：GET
-- **接口描述**：获取全校学生男女性别比例数据
+URL: http://localhost:8080/SchoolRoomSys/school/student-stat/gender-ratio
+请求方式: GET
+
+### 请求头
+Authorization: Bearer {token}
 
 ### 请求参数
 无
 
-### 响应参数
+### 响应结果
 ```json
 {
   "code": 0,
@@ -180,10 +181,27 @@ curl -X GET \
 }
 ```
 
-| 参数名 | 类型 | 说明 |
-| --- | --- | --- |
-| maleCount | Number | 男生人数 |
+### 响应参数说明
+| 参数名      | 类型   | 说明     |
+| ----------- | ------ | -------- |
+| maleCount   | Number | 男生人数 |
 | femaleCount | Number | 女生人数 |
+
+### 请求示例
+```bash
+curl -X GET \
+  'http://localhost:8080/SchoolRoomSys/school/student-stat/gender-ratio' \
+  -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+```
+
+### 特别说明
+1. 接口功能：获取全校学生男女性别比例数据
+2. 统计数据来源：
+   - maleCount: student_info表中sex='男'的记录数量
+   - femaleCount: student_info表中sex='女'的记录数量
+3. 无需任何请求参数
+4. 接口返回男女学生数量，不包含比例计算，前端可根据返回数据自行计算比例
+5. 需要登录权限才能调用此接口
 
 ## 5. 班级人数分布接口
 
