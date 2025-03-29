@@ -66,7 +66,7 @@
     </el-card>
 
     <el-row :gutter="20" class="chart-row">
-      <el-col :span="12">
+      <el-col :span="24">
         <el-card shadow="never" class="chart-card">
           <template #header>
             <div class="card-header">
@@ -78,6 +78,9 @@
           </div>
         </el-card>
       </el-col>
+    </el-row>
+
+    <el-row :gutter="20" class="chart-row">
       <el-col :span="12">
         <el-card shadow="never" class="chart-card">
           <template #header>
@@ -90,9 +93,6 @@
           </div>
         </el-card>
       </el-col>
-    </el-row>
-
-    <el-row :gutter="20" class="chart-row">
       <el-col :span="12">
         <el-card shadow="never" class="chart-card">
           <template #header>
@@ -119,18 +119,6 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="12">
-        <el-card shadow="never" class="chart-card">
-          <template #header>
-            <div class="card-header">
-              <span class="header-title">人员覆盖率</span>
-            </div>
-          </template>
-          <div class="chart-container" v-loading="loadingCoverageRate">
-            <div ref="coverageRateChart" class="chart"></div>
-          </div>
-        </el-card>
-      </el-col>
     </el-row>
   </div>
 </template>
@@ -146,19 +134,16 @@ import * as echarts from 'echarts'
 let collegeDistributionChartInstance = null
 let studentGenderRatioChartInstance = null
 let classDistributionChartInstance = null
-let coverageRateChartInstance = null
 
 // 加载状态
 const loadingCollegeDistribution = ref(false)
 const loadingStudentGenderRatio = ref(false)
 const loadingClassDistribution = ref(false)
-const loadingCoverageRate = ref(false)
 
 // 图表DOM引用
 const collegeDistributionChart = ref(null)
 const studentGenderRatioChart = ref(null)
 const classDistributionChart = ref(null)
-const coverageRateChart = ref(null)
 
 // 学院选择
 const selectedCollege = ref('')
@@ -268,25 +253,6 @@ const getClassDistribution = async () => {
     ElMessage.error('获取班级分布数据失败，请稍后重试')
   } finally {
     loadingClassDistribution.value = false
-  }
-}
-
-// 获取人员覆盖率
-const getCoverageRate = async () => {
-  loadingCoverageRate.value = true
-  try {
-    const res = await request.get('/SchoolRoomSys/school/personnel/coverage-rate')
-    const { code, msg, data } = res.data
-    if (code === 0) {
-      renderCoverageRateChart(data)
-    } else {
-      ElMessage.error(msg || '获取人员覆盖率数据失败')
-    }
-  } catch (error) {
-    console.error('获取人员覆盖率数据失败:', error)
-    ElMessage.error('获取人员覆盖率数据失败，请稍后重试')
-  } finally {
-    loadingCoverageRate.value = false
   }
 }
 
@@ -537,74 +503,11 @@ const renderClassDistributionChart = (data) => {
   classDistributionChartInstance.setOption(option)
 }
 
-// 渲染人员覆盖率图表
-const renderCoverageRateChart = (data) => {
-  if (!coverageRateChartInstance) {
-    coverageRateChartInstance = echarts.init(coverageRateChart.value)
-  }
-  
-  const option = {
-    tooltip: {
-      trigger: 'item',
-      formatter: '{b}: {c}%'
-    },
-    radar: {
-      indicator: [
-        { name: '学生管理', max: 100 },
-        { name: '教师分配', max: 100 },
-        { name: '宿舍管理', max: 100 },
-        { name: '维修响应', max: 100 },
-        { name: '班级覆盖', max: 100 }
-      ],
-      radius: '60%',
-      center: ['50%', '55%'],
-      name: {
-        textStyle: {
-          fontSize: 14
-        }
-      },
-      splitArea: {
-        show: true,
-        areaStyle: {
-          color: ['rgba(255,255,255,0.1)', 'rgba(230,230,230,0.1)']
-        }
-      }
-    },
-    series: [
-      {
-        name: '人员覆盖率',
-        type: 'radar',
-        data: [
-          {
-            value: [
-              data.studentCoverage,
-              data.teacherCoverage,
-              data.dormManagerCoverage,
-              data.maintenanceCoverage,
-              data.classCoverage
-            ],
-            name: '覆盖率(%)',
-            areaStyle: {
-              color: 'rgba(84, 112, 198, 0.5)'
-            },
-            lineStyle: {
-              width: 2
-            }
-          }
-        ]
-      }
-    ]
-  }
-  
-  coverageRateChartInstance.setOption(option)
-}
-
 // 处理窗口大小变化
 const handleResize = () => {
   collegeDistributionChartInstance?.resize()
   studentGenderRatioChartInstance?.resize()
   classDistributionChartInstance?.resize()
-  coverageRateChartInstance?.resize()
 }
 
 // 刷新所有数据
@@ -614,7 +517,6 @@ const refreshData = () => {
   getCollegeDistribution()
   getStudentGenderRatio()
   getClassDistribution()
-  getCoverageRate()
 }
 
 // 初始化图表
@@ -630,9 +532,6 @@ const initCharts = () => {
     if (classDistributionChart.value) {
       classDistributionChartInstance = echarts.init(classDistributionChart.value)
     }
-    if (coverageRateChart.value) {
-      coverageRateChartInstance = echarts.init(coverageRateChart.value)
-    }
     
     // 获取数据并渲染图表
     refreshData()
@@ -647,7 +546,6 @@ const cleanupCharts = () => {
   collegeDistributionChartInstance?.dispose()
   studentGenderRatioChartInstance?.dispose()
   classDistributionChartInstance?.dispose()
-  coverageRateChartInstance?.dispose()
   
   window.removeEventListener('resize', handleResize)
 }

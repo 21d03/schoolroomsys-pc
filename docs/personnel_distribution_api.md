@@ -266,39 +266,6 @@ curl -X GET \
 4. 返回数据按学院ID、专业名称、班级名称排序
 5. 需要登录权限才能调用此接口
 
-## 6. 人员覆盖率接口
-
-### 接口信息
-- **接口地址**：/school/personnel/coverage-rate
-- **请求方式**：GET
-- **接口描述**：获取人员管理覆盖率数据
-
-### 请求参数
-无
-
-### 响应参数
-```json
-{
-  "code": 0,
-  "msg": "success",
-  "data": {
-    "studentCoverage": 98.5,
-    "teacherCoverage": 95.2,
-    "dormManagerCoverage": 100,
-    "maintenanceCoverage": 90.8,
-    "classCoverage": 97.3
-  }
-}
-```
-
-| 参数名 | 类型 | 说明 |
-| --- | --- | --- |
-| studentCoverage | Number | 学生管理覆盖率(%) |
-| teacherCoverage | Number | 教师分配覆盖率(%) |
-| dormManagerCoverage | Number | 宿舍管理覆盖率(%) |
-| maintenanceCoverage | Number | 维修响应覆盖率(%) |
-| classCoverage | Number | 班级覆盖率(%) |
-
 ## 错误码说明
 
 | 错误码 | 说明 |
