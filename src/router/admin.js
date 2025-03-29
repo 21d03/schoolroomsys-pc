@@ -59,7 +59,7 @@ export const adminRoutes = {
         {
           path: 'maintenance',
           name: 'MaintenanceManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/personnel/maintenance/index.vue'),
           meta: { title: '维修人员管理' }
         }
       ]
