@@ -125,7 +125,7 @@ export const adminRoutes = {
         {
           path: 'class',
           name: 'ClassManagement',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/settings/class/index.vue'),
           meta: { title: '班级管理' }
         }
       ]

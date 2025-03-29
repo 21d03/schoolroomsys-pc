@@ -59,7 +59,7 @@
             <span>系统设置</span>
           </template>
           <el-menu-item index="/admin/settings/college">学院管理</el-menu-item>
-          <el-menu-item index="/admin/settings/permission">班级管理</el-menu-item>
+          <el-menu-item index="/admin/settings/class">班级管理</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
