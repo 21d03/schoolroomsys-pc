@@ -105,7 +105,7 @@ export const adminRoutes = {
         {
           path: 'distribution',
           name: 'PersonnelDistribution',
-          component: UnderDevelopment,
+          component: () => import('@/views/admin/statistics/distribution/index.vue'),
           meta: { title: '人员分布统计' }
         }
       ]
