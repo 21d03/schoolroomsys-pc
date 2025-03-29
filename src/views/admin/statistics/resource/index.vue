@@ -215,8 +215,8 @@ const getUsageRate = async () => {
 const getRoomTypeDistribution = async () => {
   loadingRoomType.value = true
   try {
-    const res = await request.get('/school/dormitory/resource/room-type')
-    const { code, msg, data } = res
+    const res = await request.get('/school/dorm/room-type-distribution')
+    const { code, msg, data } = res.data
     if (code === 0) {
       renderRoomTypeChart(data)
     } else {
@@ -234,8 +234,8 @@ const getRoomTypeDistribution = async () => {
 const getGenderRatio = async () => {
   loadingGenderRatio.value = true
   try {
-    const res = await request.get('/school/dormitory/resource/gender-ratio')
-    const { code, msg, data } = res
+    const res = await request.get('/school/dorm/gender-ratio')
+    const { code, msg, data } = res.data
     if (code === 0) {
       renderGenderRatioChart(data)
     } else {
@@ -274,16 +274,16 @@ const renderRoomDistributionChart = (data) => {
     legend: {
       data: ['总房间数', '已使用', '空闲', '维修中'],
       textStyle: {
-        fontSize: 12
+        fontSize: 14
       },
-      itemWidth: 15,
-      itemHeight: 10,
-      bottom: 0
+      itemWidth: 18,
+      itemHeight: 12,
+      bottom: 10
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '15%',
+      bottom: '12%',
       top: '8%',
       containLabel: true
     },
@@ -292,8 +292,8 @@ const renderRoomDistributionChart = (data) => {
       data: data.map(item => item.buildingName),
       axisLabel: {
         interval: 0,
-        rotate: data.length > 5 ? 30 : 0, // 如果宿舍楼数量超过5个，旋转标签以防重叠
-        fontSize: 12
+        rotate: data.length > 5 ? 30 : 0,
+        fontSize: 14
       },
       axisTick: {
         alignWithLabel: true
@@ -303,7 +303,11 @@ const renderRoomDistributionChart = (data) => {
       type: 'value',
       name: '房间数量',
       nameTextStyle: {
-        padding: [0, 0, 0, 30]
+        padding: [0, 0, 0, 40],
+        fontSize: 14
+      },
+      axisLabel: {
+        fontSize: 12
       },
       splitLine: {
         lineStyle: {
@@ -315,7 +319,7 @@ const renderRoomDistributionChart = (data) => {
       {
         name: '总房间数',
         type: 'bar',
-        barWidth: data.length > 5 ? '40%' : '60%', // 根据数据量调整柱宽
+        barWidth: data.length > 5 ? '40%' : '60%',
         itemStyle: {
           color: '#91cc75',
           borderRadius: [4, 4, 0, 0]
@@ -331,7 +335,7 @@ const renderRoomDistributionChart = (data) => {
         label: {
           show: true,
           position: 'top',
-          fontSize: 12
+          fontSize: 14
         },
         z: 1
       },
@@ -408,7 +412,7 @@ const renderUsageRateChart = (data) => {
       axisLabel: {
         interval: 0,
         rotate: data.length > 5 ? 30 : 0,
-        fontSize: 12
+        fontSize: 14
       },
       axisTick: {
         alignWithLabel: true
@@ -418,7 +422,7 @@ const renderUsageRateChart = (data) => {
       type: 'value',
       name: '使用率(%)',
       nameTextStyle: {
-        padding: [0, 0, 0, 30],
+        padding: [0, 0, 0, 40],
         fontSize: 14
       },
       axisLabel: {
@@ -446,13 +450,13 @@ const renderUsageRateChart = (data) => {
             if (value < 80) return '#fac858' // 黄色，使用率中等
             return '#ee6666' // 红色，使用率高
           },
-          borderRadius: [4, 4, 0, 0]
+          borderRadius: [6, 6, 0, 0]
         },
         label: {
           show: true,
           position: 'top',
           formatter: '{c}%',
-          fontSize: 12
+          fontSize: 14
         },
         emphasis: {
           itemStyle: {
@@ -474,23 +478,36 @@ const renderRoomTypeChart = (data) => {
   }
   
   const option = {
+    title: {
+      text: '房间类型占比',
+      left: 'center',
+      top: 10,
+      textStyle: {
+        fontSize: 16
+      }
+    },
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      left: 'left',
-      top: 'center',
+      formatter: '{b}: {c} ({d}%)',
       textStyle: {
         fontSize: 14
       }
+    },
+    legend: {
+      orient: 'vertical',
+      left: '5%',
+      top: 'middle',
+      textStyle: {
+        fontSize: 14
+      },
+      itemWidth: 20,
+      itemHeight: 14
     },
     series: [
       {
         name: '房间类型',
         type: 'pie',
-        radius: '60%',
+        radius: '65%',
         center: ['60%', '50%'],
         data: data.map(item => ({
           name: item.typeName,
@@ -499,16 +516,28 @@ const renderRoomTypeChart = (data) => {
         label: {
           show: true,
           formatter: '{b}: {c} ({d}%)',
-          fontSize: 14
+          fontSize: 14,
+          fontWeight: 'bold'
         },
         labelLine: {
-          show: true
+          show: true,
+          length: 20,
+          length2: 15
+        },
+        itemStyle: {
+          borderRadius: 8,
+          borderWidth: 2,
+          borderColor: '#fff'
         },
         emphasis: {
           itemStyle: {
             shadowBlur: 10,
             shadowOffsetX: 0,
             shadowColor: 'rgba(0, 0, 0, 0.5)'
+          },
+          label: {
+            fontSize: 16,
+            fontWeight: 'bold'
           }
         }
       }
@@ -525,23 +554,36 @@ const renderGenderRatioChart = (data) => {
   }
   
   const option = {
+    title: {
+      text: '男女宿舍比例',
+      left: 'center',
+      top: 10,
+      textStyle: {
+        fontSize: 16
+      }
+    },
     tooltip: {
       trigger: 'item',
-      formatter: '{b}: {c} ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      left: 'left',
-      top: 'center',
+      formatter: '{b}: {c} ({d}%)',
       textStyle: {
         fontSize: 14
       }
+    },
+    legend: {
+      orient: 'vertical',
+      left: '5%',
+      top: 'middle',
+      textStyle: {
+        fontSize: 14
+      },
+      itemWidth: 20,
+      itemHeight: 14
     },
     series: [
       {
         name: '性别比例',
         type: 'pie',
-        radius: ['30%', '60%'],
+        radius: ['30%', '65%'],
         center: ['60%', '50%'],
         avoidLabelOverlap: false,
         itemStyle: {
@@ -553,6 +595,7 @@ const renderGenderRatioChart = (data) => {
           show: true,
           formatter: '{b}: {c} ({d}%)',
           fontSize: 14,
+          fontWeight: 'bold',
           position: 'outside'
         },
         emphasis: {
@@ -560,12 +603,16 @@ const renderGenderRatioChart = (data) => {
             show: true,
             fontSize: 16,
             fontWeight: 'bold'
+          },
+          itemStyle: {
+            shadowBlur: 10,
+            shadowColor: 'rgba(0,0,0,0.3)'
           }
         },
         labelLine: {
           show: true,
-          length: 15,
-          length2: 10
+          length: 20,
+          length2: 15
         },
         data: [
           { 
@@ -727,7 +774,7 @@ onBeforeUnmount(() => {
     margin-bottom: 20px;
     
     .chart-card {
-      height: 450px;
+      height: 550px;
       
       .card-header {
         display: flex;
@@ -741,7 +788,7 @@ onBeforeUnmount(() => {
       }
       
       .chart-container {
-        height: 380px;
+        height: 480px;
         width: 100%;
         
         .chart {
